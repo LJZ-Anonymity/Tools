@@ -1,0 +1,41 @@
+﻿<ResourceDictionary 
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"        
+>
+    <Style x:Key="{x:Type CheckBox}" TargetType="{x:Type CheckBox}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Grid>
+                        <!-- 复选框 -->
+                        <Border x:Name="checkBoxBorder" BorderBrush="LightGray" HorizontalAlignment="Left" VerticalAlignment="Center" Width="15" Height="15" Background="White" BorderThickness="1" CornerRadius="3">
+                            <Path x:Name="checkMark" Data="M0,6.5 L6.5,10 L15,4" Margin="2,2,2.2,3.2" Stretch="Fill" Stroke="White" StrokeThickness="2" Opacity="0"/>
+                        </Border>
+                        <ContentPresenter Margin="20,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <!-- 当 CheckBox 被勾选时 -->
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="checkBoxBorder" Property="BorderThickness" Value="0"/>
+                            <Setter TargetName="checkBoxBorder" Property="Background" Value="#FF326CF3"/>
+                            <!-- 勾选动画 -->
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="checkMark" Storyboard.TargetProperty="StrokeThickness" From="0" To="2" Duration="0:0:0.4"/>
+                                        <DoubleAnimation Storyboard.TargetName="checkMark" Storyboard.TargetProperty="Opacity"  From="0" To="1" Duration="0:0:0.2"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                        </Trigger>
+                        <!-- 当鼠标悬停在 CheckBox 上时 -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="#FF5B5B5B"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

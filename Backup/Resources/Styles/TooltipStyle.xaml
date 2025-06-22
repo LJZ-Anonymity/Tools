@@ -1,0 +1,29 @@
+﻿<ResourceDictionary 
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+>
+    <!-- 圆角气泡 -->
+    <Style x:Key="{x:Type ToolTip}" TargetType="{x:Type ToolTip}">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToolTip}">
+                    <Grid>
+                        <!-- 阴影效果 -->
+                        <Rectangle Fill="White" Margin="11,11,5,7">
+                            <Rectangle.Effect>
+                                <DropShadowEffect Color="LightGray" Direction="0" BlurRadius="15" RenderingBias="Quality" ShadowDepth="1"/>
+                            </Rectangle.Effect>
+                        </Rectangle>
+                        <!-- 内容区域 -->
+                        <Border Background="White" BorderBrush="#C5CFD8" BorderThickness="1" CornerRadius="3" Margin="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6"/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

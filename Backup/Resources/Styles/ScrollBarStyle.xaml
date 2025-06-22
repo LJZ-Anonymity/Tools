@@ -1,0 +1,150 @@
+﻿<ResourceDictionary
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+>
+    <!-- 自定义 Thumb 样式，用于滚动条的滑块 -->
+    <Style x:Key="{x:Type Thumb}" TargetType="{x:Type Thumb}">
+        <Setter Property="Tag" Value="Vertical"/>
+        <Setter Property="Background" Value="Gray"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <!-- 设置圆角矩形背景，圆角半径为 3 -->
+                    <Border x:Name="Rectangle" CornerRadius="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{TemplateBinding Background}"/>
+
+                    <!-- 设置触发器 -->
+                    <ControlTemplate.Triggers>
+                        <!-- 当滑块为纵向时，滑块宽度为 2 -->
+                        <Trigger Property="Tag" Value="Vertical">
+                            <Setter TargetName="Rectangle" Property="Height" Value="Auto"/>
+                            <Setter TargetName="Rectangle" Property="Width" Value="2"/>
+                        </Trigger>
+                        <!-- 当滑块为纵向且鼠标位于滑块上时，通过动画改变宽度 -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Tag" Value="Vertical"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <MultiTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Rectangle" Storyboard.TargetProperty="Width" From="2" To="6" Duration="0:0:0.2" FillBehavior="HoldEnd"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </MultiTrigger.EnterActions>
+                            <MultiTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Rectangle" Storyboard.TargetProperty="Width" From="6" To="2" Duration="0:0:0.2" FillBehavior="HoldEnd">
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </MultiTrigger.ExitActions>
+                        </MultiTrigger>
+
+                        <!-- 当滑块为横向时，滑块高度为 2 -->
+                        <Trigger Property="Tag" Value="Horizontal">
+                            <Setter TargetName="Rectangle" Property="Width" Value="Auto"/>
+                            <Setter TargetName="Rectangle" Property="Height" Value="2"/>
+                        </Trigger>
+                        <!-- 当滑块为横向且鼠标位于滑块上时，通过动画改变高度 -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Tag" Value="Horizontal"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <MultiTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Rectangle" Storyboard.TargetProperty="Height" From="2" To="6" Duration="0:0:0.2" FillBehavior="HoldEnd">
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </MultiTrigger.EnterActions>
+                            <MultiTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Rectangle" Storyboard.TargetProperty="Height" From="6" To="2" Duration="0:0:0.2" FillBehavior="HoldEnd">
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </MultiTrigger.ExitActions>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 自定义 ScrollBar 样式 -->
+    <Style x:Key="{x:Type ScrollBar}" TargetType="{x:Type ScrollBar}">
+        <!-- 轨道背景色设置为透明 -->
+        <Setter Property="Background" Value="Transparent"/>
+        <!-- 修改轨道宽度为 6 -->
+        <Setter Property="Width" Value="6"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ScrollBar}">
+                    <!-- 滚动条的整体布局容器 -->
+                    <Grid x:Name="GridRoot" Width="6" Height="Auto" Background="Transparent">
+                        <!-- 定义滚动条的轨道及其子元素 -->
+                        <Track x:Name="PART_Track" Grid.Row="0" IsDirectionReversed="True" Focusable="False">
+                            <!-- 使用自定义的 ScrollThumbs 样式 -->
+                            <Track.Thumb>
+                                <Thumb x:Name="Thumb" Background="{TemplateBinding Foreground}" Style="{DynamicResource ScrollThumbs}"/>
+                            </Track.Thumb>
+                            <!-- 隐藏向上箭头按钮 -->
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton x:Name="PageUp" Command="ScrollBar.PageDownCommand" Visibility="Collapsed"/>
+                            </Track.IncreaseRepeatButton>
+                            <!-- 隐藏向下箭头按钮 -->
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton x:Name="PageDown" Command="ScrollBar.PageUpCommand" Visibility="Collapsed"/>
+                            </Track.DecreaseRepeatButton>
+                        </Track>
+                    </Grid>
+
+                    <!-- 设置触发器 -->
+                    <ControlTemplate.Triggers>
+                        <!-- 当拖拽 Thumb 时，改变背景色 -->
+                        <Trigger SourceName="Thumb" Property="IsDragging" Value="True">
+                            <Setter TargetName="Thumb" Property="Background" Value="#4D4D4D"/>
+                        </Trigger>
+                        <!-- 当释放 Thumb 时，还原背景色 -->
+                        <Trigger SourceName="Thumb" Property="IsDragging" Value="False">
+                            <Setter TargetName="Thumb" Property="Background" Value="Gray"/>
+                        </Trigger>
+                        <!-- 当滚动条被禁用时，隐藏 Thumb -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Thumb" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+
+                        <!-- 当滚动条方向为横向时，调整布局 -->
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <!-- 转换为横向滚动条布局 -->
+                            <Setter TargetName="GridRoot" Property="LayoutTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="-90"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter TargetName="PART_Track" Property="LayoutTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="-90"/>
+                                </Setter.Value>
+                            </Setter>
+                            <!-- 设置横向滚动条的宽高 -->
+                            <Setter Property="Width" Value="Auto"/>
+                            <!-- 修改横向滚动条的高度为 4 -->
+                            <Setter Property="Height" Value="4"/>
+                            <!-- 设置 Thumb 的 Tag 属性为 "Horizontal" -->
+                            <Setter TargetName="Thumb" Property="Tag" Value="Horizontal"/>
+                            <!-- 更改分页命令 -->
+                            <Setter TargetName="PageDown" Property="Command" Value="ScrollBar.PageLeftCommand"/>
+                            <Setter TargetName="PageUp" Property="Command" Value="ScrollBar.PageRightCommand"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
