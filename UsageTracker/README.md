@@ -1,4 +1,7 @@
-﻿项目文件结构：
+﻿这是统计`Visual Studio`使用时长的扩展项目
+
+项目文件结构：
+
 ```text
 UsageTracker/
 ├── Commands/

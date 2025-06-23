@@ -70,6 +70,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="README.md" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
@@ -135,31 +136,30 @@
   <!-- 确保所有依赖项被正确复制到输出目录 -->
   <Target Name="CopyDependencies" AfterTargets="Build">
     <Message Text="复制LiveCharts依赖项..." Importance="high" />
-    
     <!-- 定义LiveCharts相关DLL路径 -->
     <PropertyGroup>
       <LiveChartsWpfPath>$(NuGetPackageRoot)livecharts.wpf\0.9.7\lib\net45\LiveCharts.Wpf.dll</LiveChartsWpfPath>
       <LiveChartsPath>$(NuGetPackageRoot)livecharts\0.9.7\lib\net45\LiveCharts.dll</LiveChartsPath>
     </PropertyGroup>
-    
     <!-- 复制LiveCharts相关DLL到输出目录 -->
     <Copy SourceFiles="$(LiveChartsWpfPath)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(LiveChartsWpfPath)')" />
     <Copy SourceFiles="$(LiveChartsPath)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(LiveChartsPath)')" />
     <Message Text="LiveCharts依赖项复制完成" Importance="high" />
   </Target>
-  
   <!-- 确保VSIX包含所有必要的依赖项 -->
   <ItemGroup>
     <Content Include="$(LiveChartsWpfPath)">
       <Link>LiveCharts.Wpf.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
-      <VSIXSubPath></VSIXSubPath>
+      <VSIXSubPath>
+      </VSIXSubPath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="$(LiveChartsPath)">
       <Link>LiveCharts.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
-      <VSIXSubPath></VSIXSubPath>
+      <VSIXSubPath>
+      </VSIXSubPath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
