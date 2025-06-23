@@ -79,3 +79,5 @@ logs/
 /UsageTracker/bin
 /UsageTracker/.vs
 /UsageTracker/bin
+Backup/FileCopy/FileCopy/
+Backup/FileCopy/x64/Debug/
