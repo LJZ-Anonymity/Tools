@@ -1,7 +1,9 @@
 /Backup/.vs
 /Backup/bin
 /Backup/FileCopy/.vs
-/Backup/bin
-/Backup/bin
-/Backup/.vs
-/Backup/.vs
+
+/UsageTracker/obj
+/UsageTracker/.vs/UsageTracker
+/UsageTracker/bin
+/UsageTracker/.vs
+/UsageTracker/bin

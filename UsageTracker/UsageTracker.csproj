@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>17.0</MinimumVisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <UseCodebase>true</UseCodebase>
+    <StartAction>Program</StartAction>
+    <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
+    <StartArguments>/rootsuffix Exp</StartArguments>
+    <DeployExtension>True</DeployExtension>
+    <IncludeDebugSymbolsInVSIXContainer>False</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>False</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CreateVsixContainer>True</CreateVsixContainer>
+    <CopyVsixExtensionFiles>True</CopyVsixExtensionFiles>
+    <CopyVsixExtensionLocation>$(OutDir)</CopyVsixExtensionLocation>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectTypeGuids>{82b43b9b-a64c-4715-b499-d71e9ca2bd60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{5861D6E5-30ED-44E6-9F9D-FCF560A3F0C0}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>UsageTracker</RootNamespace>
+    <AssemblyName>UsageTracker</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <LangVersion>8.0</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Commands\ShowUsageStatsCommand.cs" />
+    <Compile Include="Database\DatabaseHelper.cs" />
+    <Compile Include="Models\UsageSession.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\TrackingService.cs" />
+    <Compile Include="ToolWindows\UsageStatsControl.xaml.cs">
+      <DependentUpon>UsageStatsControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ToolWindows\UsageStatsToolWindow.cs" />
+    <Compile Include="UsageTrackerPackage.cs" />
+    <Compile Include="VSCommandTable.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>VSCommandTable.vsct</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="VSPackage.resx">
+      <MergeWithCTO>true</MergeWithCTO>
+      <ManifestResourceName>VSPackage</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+    <VSCTCompile Include="VSCommandTable.vsct">
+      <ResourceName>Menus.ctmenu</ResourceName>
+      <Generator>VsctGenerator</Generator>
+      <LastGenOutput>VSCommandTable.cs</LastGenOutput>
+    </VSCTCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="LiveCharts">
+      <HintPath>$(NuGetPackageRoot)livecharts\0.9.7\lib\net45\LiveCharts.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="LiveCharts.Wpf">
+      <HintPath>$(NuGetPackageRoot)livecharts.wpf\0.9.7\lib\net45\LiveCharts.Wpf.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.32112.339" ExcludeAssets="runtime" NoWarn="NU1604" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.14.2094" NoWarn="NU1604" />
+    <PackageReference Include="System.Data.SQLite">
+      <Version>1.0.119</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="ToolWindows\UsageStatsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <PropertyGroup>
+    <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Target Name="EnsureSQLiteInterop" AfterTargets="Build">
+    <PropertyGroup>
+      <SQLiteInteropX86>$(NuGetPackageRoot)stub.system.data.sqlite.core.netframework\1.0.119\build\net46\x86\SQLite.Interop.dll</SQLiteInteropX86>
+      <SQLiteInteropX64>$(NuGetPackageRoot)stub.system.data.sqlite.core.netframework\1.0.119\build\net46\x64\SQLite.Interop.dll</SQLiteInteropX64>
+    </PropertyGroup>
+    <Message Text="确保SQLite.Interop.dll可用..." Importance="high" />
+    <MakeDir Directories="$(OutputPath)" Condition="!Exists('$(OutputPath)')" />
+    <MakeDir Directories="$(OutputPath)\x86" Condition="!Exists('$(OutputPath)\x86')" />
+    <MakeDir Directories="$(OutputPath)\x64" Condition="!Exists('$(OutputPath)\x64')" />
+    <Copy SourceFiles="$(SQLiteInteropX86)" DestinationFolder="$(OutputPath)\x86" SkipUnchangedFiles="true" Condition="Exists('$(SQLiteInteropX86)')" />
+    <Copy SourceFiles="$(SQLiteInteropX64)" DestinationFolder="$(OutputPath)\x64" SkipUnchangedFiles="true" Condition="Exists('$(SQLiteInteropX64)')" />
+    <Copy SourceFiles="$(SQLiteInteropX86)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(SQLiteInteropX86)')" />
+    <Copy SourceFiles="$(SQLiteInteropX86)" DestinationFolder="$(USERPROFILE)\AppData\Local\Microsoft\VisualStudio\17.0_b402d05e\Extensions\$(AssemblyName)" SkipUnchangedFiles="true" Condition="Exists('$(SQLiteInteropX86)')" />
+    <Copy SourceFiles="$(SQLiteInteropX64)" DestinationFolder="$(USERPROFILE)\AppData\Local\Microsoft\VisualStudio\17.0_b402d05e\Extensions\$(AssemblyName)\x64" SkipUnchangedFiles="true" Condition="Exists('$(SQLiteInteropX64)')" />
+    <Message Text="SQLite.Interop.dll处理完成" Importance="high" />
+  </Target>
+  <!-- 确保所有依赖项被正确复制到输出目录 -->
+  <Target Name="CopyDependencies" AfterTargets="Build">
+    <Message Text="复制LiveCharts依赖项..." Importance="high" />
+    
+    <!-- 定义LiveCharts相关DLL路径 -->
+    <PropertyGroup>
+      <LiveChartsWpfPath>$(NuGetPackageRoot)livecharts.wpf\0.9.7\lib\net45\LiveCharts.Wpf.dll</LiveChartsWpfPath>
+      <LiveChartsPath>$(NuGetPackageRoot)livecharts\0.9.7\lib\net45\LiveCharts.dll</LiveChartsPath>
+    </PropertyGroup>
+    
+    <!-- 复制LiveCharts相关DLL到输出目录 -->
+    <Copy SourceFiles="$(LiveChartsWpfPath)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(LiveChartsWpfPath)')" />
+    <Copy SourceFiles="$(LiveChartsPath)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(LiveChartsPath)')" />
+    <Message Text="LiveCharts依赖项复制完成" Importance="high" />
+  </Target>
+  
+  <!-- 确保VSIX包含所有必要的依赖项 -->
+  <ItemGroup>
+    <Content Include="$(LiveChartsWpfPath)">
+      <Link>LiveCharts.Wpf.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath></VSIXSubPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(LiveChartsPath)">
+      <Link>LiveCharts.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath></VSIXSubPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <PropertyGroup>
+    <PostBuildEvent>
+      echo 复制LiveCharts依赖项...
+      copy /Y "$(NuGetPackageRoot)livecharts.wpf\0.9.7\lib\net45\LiveCharts.Wpf.dll" "$(TargetDir)"
+      copy /Y "$(NuGetPackageRoot)livecharts\0.9.7\lib\net45\LiveCharts.dll" "$(TargetDir)"
+      echo LiveCharts依赖项复制完成
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>
