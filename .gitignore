@@ -1,7 +1,79 @@
+# Visual Studio 临时文件和文件夹
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# 构建输出
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 扩展相关
+*.vsix
+*.vsixmanifest
+
+# 临时文件
+*.tmp
+*.temp
+*.log
+*.tlog
+
+# 用户特定文件
+*.userprefs
+*.csproj.user
+*.vbproj.user
+
+# 包管理器文件
+packages/
+*.nupkg
+*.snupkg
+
+# 数据库文件
+*.mdf
+*.ldf
+*.ndf
+
+# 其他常见临时文件
+*.cache
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.dll
+*.exe
+*.publishproj
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志文件
+*.log
+logs/
+
+# 配置文件（如果需要忽略）
+# *.config
+# appsettings.*.json
+
+# 备份文件
+*.bak
+*.backup
+*~
+
+# 压缩文件
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# 特定项目的忽略规则
 /Backup/.vs
 /Backup/bin
 /Backup/FileCopy/.vs
-
 /UsageTracker/obj
 /UsageTracker/.vs/UsageTracker
 /UsageTracker/bin
