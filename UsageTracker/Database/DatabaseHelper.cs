@@ -63,21 +63,23 @@ namespace UsageTracker.Database
             try 
             {
                 cmd.CommandText = @"
-                    CREATE TABLE UsageSessions (
+                    CREATE TABLE IF NOT EXISTS SolutionUsageStats (
+                        SolutionName TEXT PRIMARY KEY,
+                        TotalDurationSeconds INTEGER NOT NULL,
+                        DebugCount INTEGER NOT NULL DEFAULT 0
+                    );
+                    CREATE TABLE IF NOT EXISTS UsageSessions (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
                         SolutionName TEXT NOT NULL,
                         StartTime DATETIME NOT NULL,
                         EndTime DATETIME NOT NULL,
                         DurationSeconds INTEGER NOT NULL,
+                        DebugCount INTEGER NOT NULL DEFAULT 0,
                         IsClosed INTEGER NOT NULL DEFAULT 0
                     );
-                    CREATE UNIQUE INDEX idx_SolutionStart ON UsageSessions(SolutionName, StartTime);
-                    CREATE INDEX idx_StartTime ON UsageSessions(StartTime);
-                    CREATE INDEX idx_SolutionName ON UsageSessions(SolutionName);
-                    CREATE TABLE IF NOT EXISTS SolutionUsageStats (
-                        SolutionName TEXT PRIMARY KEY,
-                        TotalDurationSeconds INTEGER NOT NULL
-                    );
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_SolutionStart ON UsageSessions(SolutionName, StartTime);
+                    CREATE INDEX IF NOT EXISTS idx_StartTime ON UsageSessions(StartTime);
+                    CREATE INDEX IF NOT EXISTS idx_SolutionName ON UsageSessions(SolutionName);
                 ";
                 cmd.ExecuteNonQuery(); // 执行命令
             }
@@ -147,12 +149,13 @@ namespace UsageTracker.Database
                     // 插入新记录
                     cmd.CommandText = @"
                         INSERT INTO UsageSessions 
-                        (SolutionName, StartTime, EndTime, DurationSeconds, IsClosed) 
-                        VALUES (@name, @start, @end, @dur, @closed)";
+                        (SolutionName, StartTime, EndTime, DurationSeconds, DebugCount, IsClosed) 
+                        VALUES (@name, @start, @end, @dur, @debug, @closed)";
                     cmd.Parameters.AddWithValue("@name", session.SolutionName);
                     cmd.Parameters.AddWithValue("@start", startTimeUtc);
                     cmd.Parameters.AddWithValue("@end", endTimeUtc);
                     cmd.Parameters.AddWithValue("@dur", session.DurationSeconds);
+                    cmd.Parameters.AddWithValue("@debug", session.DebugCount);
                     cmd.Parameters.AddWithValue("@closed", closeSession ? 1 : 0);
                     cmd.ExecuteNonQuery();
                 }
@@ -163,18 +166,19 @@ namespace UsageTracker.Database
                     {
                         cmd.CommandText = @"
                             UPDATE UsageSessions
-                            SET EndTime = @end, DurationSeconds = @dur + DurationSeconds, IsClosed = 1
+                            SET EndTime = @end, DurationSeconds = @dur + DurationSeconds, DebugCount = @debug, IsClosed = 1
                             WHERE SolutionName = @name AND StartTime = @start";
                     }
                     else
                     {
                         cmd.CommandText = @"
                             UPDATE UsageSessions
-                            SET EndTime = @end, DurationSeconds = @dur + DurationSeconds
+                            SET EndTime = @end, DurationSeconds = @dur + DurationSeconds, DebugCount = @debug
                             WHERE SolutionName = @name AND StartTime = @start AND IsClosed = 0";
                     }
                     cmd.Parameters.AddWithValue("@end", endTimeUtc);
                     cmd.Parameters.AddWithValue("@dur", session.DurationSeconds);
+                    cmd.Parameters.AddWithValue("@debug", session.DebugCount);
                     cmd.Parameters.AddWithValue("@name", session.SolutionName);
                     cmd.Parameters.AddWithValue("@start", startTimeUtc);
                     cmd.ExecuteNonQuery();
@@ -252,6 +256,7 @@ namespace UsageTracker.Database
                         int id = Convert.ToInt32(reader["Id"]); // 获取ID
                         string solutionName = reader["SolutionName"].ToString(); // 获取解决方案名称
                         int durationSeconds = Convert.ToInt32(reader["DurationSeconds"]); // 获取持续时间
+                        int debugCount = reader["DebugCount"] != DBNull.Value ? Convert.ToInt32(reader["DebugCount"]) : 0; // 获取调试次数
 
                         DateTime startTime = reader.GetDateTime(reader.GetOrdinal("StartTime")); // 获取开始时间
                         DateTime endTime = reader.GetDateTime(reader.GetOrdinal("EndTime")); // 获取结束时间
@@ -262,7 +267,8 @@ namespace UsageTracker.Database
                             SolutionName = solutionName,
                             StartTime = startTime,
                             EndTime = endTime,
-                            DurationSeconds = durationSeconds
+                            DurationSeconds = durationSeconds,
+                            DebugCount = debugCount
                         };
                         sessions.Add(session);
                     }
@@ -354,6 +360,39 @@ namespace UsageTracker.Database
             using var cmd = new SQLiteCommand("SELECT SUM(TotalDurationSeconds) FROM SolutionUsageStats", _connection);
             var val = cmd.ExecuteScalar();
             return val != DBNull.Value && val != null ? Convert.ToInt32(val) : 0; // 如果值不是DBNull，则返回值，否则返回0
+        }
+
+        /// <summary>
+        /// 增加调试次数
+        /// </summary>
+        /// <param name="solutionName">解决方案名称</param>
+        public void IncrementDebugCount(string solutionName)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DatabaseHelper] 增加调试次数: {solutionName}");
+            if (_connection?.State != ConnectionState.Open) return;
+            using var cmd = new SQLiteCommand(_connection);
+            cmd.CommandText = @"
+                INSERT INTO SolutionUsageStats (SolutionName, TotalDurationSeconds, DebugCount)
+                VALUES (@name, 0, 1)
+                ON CONFLICT(SolutionName) DO UPDATE SET DebugCount = DebugCount + 1
+            ";
+            cmd.Parameters.AddWithValue("@name", solutionName);
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>
+        /// 获取调试次数
+        /// </summary>
+        /// <param name="solutionName">解决方案名称</param>
+        /// <returns>调试次数</returns>
+        public int GetDebugCount(string solutionName)
+        {
+            if (_connection?.State != ConnectionState.Open) return 0;
+            using var cmd = new SQLiteCommand(_connection);
+            cmd.CommandText = "SELECT DebugCount FROM SolutionUsageStats WHERE SolutionName = @name";
+            cmd.Parameters.AddWithValue("@name", solutionName);
+            var val = cmd.ExecuteScalar();
+            return val != DBNull.Value && val != null ? Convert.ToInt32(val) : 0;
         }
 
         // 设置SQLite本机库

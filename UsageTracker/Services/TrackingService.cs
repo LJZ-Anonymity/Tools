@@ -14,6 +14,7 @@ namespace UsageTracker.Services
         private string _currentSolution; // 当前解决方案
         private DateTime _sessionStart; // 会话开始时间
         private bool _isSolutionOpen; // 是否打开解决方案
+        private int _sessionDebugCount = 0; // 当前会话调试次数
 
         /// <summary>
         /// 构造函数
@@ -35,6 +36,9 @@ namespace UsageTracker.Services
             _isSolutionOpen = true; // 设置为打开
             _sessionStart = DateTime.Now; // 设置会话开始时间
             _currentSolution = solutionName; // 设置当前解决方案
+            _sessionDebugCount = 0; // 重置调试次数
+            System.Diagnostics.Debug.WriteLine($"[TrackingService] 会话开始: {solutionName}");
+            _dbHelper.UpdateSolutionUsageStats(solutionName, 0); // 确保有行
         }
 
         // 结束解决方案会话
@@ -43,6 +47,7 @@ namespace UsageTracker.Services
             RecordCurrentSession(true); // 关闭会话，传递true
             _isSolutionOpen = false;
             _currentSolution = null;
+            _sessionDebugCount = 0; // 结束时重置
         }
 
         /// <summary>
@@ -79,10 +84,22 @@ namespace UsageTracker.Services
                         SolutionName = _currentSolution,
                         StartTime = _sessionStart,
                         EndTime = endTime,
-                        DurationSeconds = (int)duration.TotalSeconds
+                        DurationSeconds = (int)duration.TotalSeconds,
+                        DebugCount = _sessionDebugCount // 写入调试次数
                     };
                     _dbHelper.RecordSession(session, closeSession); // 记录会话
                 }); // 在主线程中执行
+            }
+        }
+
+        // 记录调试启动
+        public void RecordDebugStart()
+        {
+            if (!string.IsNullOrEmpty(_currentSolution))
+            {
+                _sessionDebugCount++; // 当前会话调试次数+1
+                System.Diagnostics.Debug.WriteLine($"[TrackingService] 记录调试启动: {_currentSolution}, 当前会话调试次数: {_sessionDebugCount}");
+                _dbHelper.IncrementDebugCount(_currentSolution);
             }
         }
 

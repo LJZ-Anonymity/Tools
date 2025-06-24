@@ -39,6 +39,7 @@
                         <DataGridTextColumn Header="开始时间" Binding="{Binding StartTime, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="120"/>
                         <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat={}{0:yyyy-MM-dd HH:mm}}" Width="120"/>
                         <DataGridTextColumn Header="持续时间" Binding="{Binding Duration}" Width="100"/>
+                        <DataGridTextColumn Header="调试次数" Binding="{Binding DebugCount}" Width="100"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -50,6 +51,7 @@
                     </lvc:CartesianChart.AxisX>
                     <lvc:CartesianChart.AxisY>
                         <lvc:Axis Title="分钟"></lvc:Axis>
+                        <lvc:Axis Title="调试次数" Position="RightTop"></lvc:Axis>
                     </lvc:CartesianChart.AxisY>
                 </lvc:CartesianChart>
             </TabItem>
@@ -62,6 +64,7 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="解决方案" Binding="{Binding SolutionName}" Width="*"/>
                             <DataGridTextColumn Header="累计时长（分钟）" Binding="{Binding TotalMinutes}" Width="150"/>
+                            <DataGridTextColumn Header="调试次数" Binding="{Binding DebugCount}" Width="100"/>
                         </DataGrid.Columns>
                     </DataGrid>
                     <TextBlock x:Name="tbTotalUsage" FontWeight="Bold" Margin="0,10,0,0"/>

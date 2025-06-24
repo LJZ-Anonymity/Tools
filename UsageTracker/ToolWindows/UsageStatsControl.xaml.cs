@@ -248,7 +248,8 @@ namespace UsageTracker.ToolWindows
                     .Select(g => new
                     {
                         Date = g.Key,
-                        TotalMinutes = g.Sum(s => s.Duration.TotalMinutes)
+                        TotalMinutes = g.Sum(s => s.Duration.TotalMinutes),
+                        TotalDebugs = g.Sum(s => s.DebugCount)
                     })
                     .OrderBy(d => d.Date)
                     .ToList(); // 按日期分组
@@ -258,15 +259,24 @@ namespace UsageTracker.ToolWindows
 
                 if (dailyUsage.Any())
                 {
-                    // 创建柱状图系列
+                    // 创建使用时间柱状图系列
                     var columnSeries = new ColumnSeries
                     {
                         Title = "使用时间 (分钟)",
                         Values = new ChartValues<double>(dailyUsage.Select(d => Math.Round(d.TotalMinutes, 1)))
                     };
-
                     newSeries.Add(columnSeries);
-                    newLabels.AddRange(dailyUsage.Select(d => d.Date.ToString("MM/dd")));
+
+                    // 创建调试次数柱状图系列
+                    var debugSeries = new ColumnSeries
+                    {
+                        Title = "调试次数",
+                        Values = new ChartValues<double>(dailyUsage.Select(d => (double)d.TotalDebugs)),
+                        ScalesYAt = 1 // 使用右侧Y轴
+                    };
+                    newSeries.Add(debugSeries);
+
+                    newLabels.AddRange(dailyUsage.Select(d => d.Date.ToString("MM/dd"))); // 添加日期标签
                 }
 
                 // 使用Dispatcher确保在UI线程上更新
@@ -282,7 +292,7 @@ namespace UsageTracker.ToolWindows
         // 刷新数据
         private void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
-            LoadData();
+            LoadData(); // 刷新数据
         }
 
         // 导出数据
@@ -345,7 +355,7 @@ namespace UsageTracker.ToolWindows
                 writer.WriteLine($"\"{session.SolutionName}\"," +
                                 $"\"{session.StartTime:o}\"," +
                                 $"\"{session.EndTime:o}\"," +
-                                $"{session.DurationSeconds}");
+                                $"{session.DurationSeconds}"); // 写入数据
             }
         }
 
@@ -403,7 +413,11 @@ namespace UsageTracker.ToolWindows
         private void LoadSolutionStats()
         {
             var stats = _dbHelper.GetAllSolutionUsageStats()
-                .Select(s => new { s.SolutionName, TotalMinutes = Math.Round(s.TotalDurationSeconds / 60.0, 1) })
+                .Select(s => new {
+                    s.SolutionName,
+                    TotalMinutes = Math.Round(s.TotalDurationSeconds / 60.0, 1),
+                    DebugCount = _dbHelper.GetDebugCount(s.SolutionName)
+                })
                 .ToList();
             dgSolutionStats.ItemsSource = stats;
 
