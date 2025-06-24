@@ -11,55 +11,49 @@ namespace UsageTracker.Database
 {
     public class DatabaseHelper : IDisposable
     {
-        // 使用动态路径而不是硬编码路径
+        // 数据库路径，使用动态路径而不是硬编码路径
         private static readonly string DB_FOLDER = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Anonymity", "UsageTracker");
-        private static readonly string DB_FILENAME = "UsageTracker.db";
-        private static readonly string DB_PATH = Path.Combine(DB_FOLDER, DB_FILENAME);
-        private static readonly string CONNECTION_STRING = $"Data Source={DB_PATH};Version=3;";
+            "Anonymity", "UsageTracker"); // 数据库文件夹路径
+        private static readonly string DB_FILENAME = "UsageTracker.db"; // 数据库文件名
+        private static readonly string DB_PATH = Path.Combine(DB_FOLDER, DB_FILENAME); // 数据库路径
+        private static readonly string CONNECTION_STRING = $"Data Source={DB_PATH};Version=3;"; // 数据库连接字符串
 
-        private SQLiteConnection _connection;
-        private readonly string _dbPath;
+        private readonly string _dbPath= DB_PATH; // 数据库路径
+        private SQLiteConnection _connection; // 数据库连接
 
         public DatabaseHelper()
         {
-            try
+            SetupSQLiteNativeLibrary();
+            InitializeConnection();
+        }
+
+        // 初始化数据库连接
+        private void InitializeConnection()
+        {
+            // 确保数据库目录存在
+            if (!Directory.Exists(DB_FOLDER))
             {
-                // 设置SQLite本机库的加载路径
-                SetupSQLiteNativeLibrary();
-
-                // 确保数据库目录存在
-                if (!Directory.Exists(DB_FOLDER))
-                {
-                    Directory.CreateDirectory(DB_FOLDER);
-                }
-
-                // 完整的数据库文件路径
-                _dbPath = DB_PATH;
-                bool isNewDb = !File.Exists(_dbPath);
-
-                // 如果数据库文件不存在，则创建一个
-                if (isNewDb)
-                {
-                    SQLiteConnection.CreateFile(_dbPath);
-                }
-
-                // 尝试连接数据库
-                try
-                {
-                    _connection = new SQLiteConnection(CONNECTION_STRING);
-                    _connection.Open();
-
-                    // 如果是新数据库，创建表结构
-                    if (isNewDb)
-                    {
-                        CreateDatabaseSchema();
-                    }
-                }
-                catch { }
+                Directory.CreateDirectory(DB_FOLDER);
             }
-            catch { }
+
+            // 完整的数据库文件路径
+            bool isNewDb = !File.Exists(_dbPath);
+
+            // 如果数据库文件不存在，则创建一个
+            if (isNewDb)
+            {
+                SQLiteConnection.CreateFile(_dbPath);
+            }
+
+            _connection = new SQLiteConnection(CONNECTION_STRING);
+            _connection.Open();
+
+            // 如果是新数据库，创建表结构
+            if (isNewDb)
+            {
+                CreateDatabaseSchema();
+            }
         }
 
         // 创建数据库表结构
@@ -79,7 +73,12 @@ namespace UsageTracker.Database
                     );
                     CREATE UNIQUE INDEX idx_SolutionStart ON UsageSessions(SolutionName, StartTime);
                     CREATE INDEX idx_StartTime ON UsageSessions(StartTime);
-                    CREATE INDEX idx_SolutionName ON UsageSessions(SolutionName);";
+                    CREATE INDEX idx_SolutionName ON UsageSessions(SolutionName);
+                    CREATE TABLE IF NOT EXISTS SolutionUsageStats (
+                        SolutionName TEXT PRIMARY KEY,
+                        TotalDurationSeconds INTEGER NOT NULL
+                    );
+                ";
                 cmd.ExecuteNonQuery(); // 执行命令
             }
             finally
@@ -88,10 +87,27 @@ namespace UsageTracker.Database
             }
         }
 
+        // 释放数据库连接
+        public void Dispose()
+        {
+            DisposeConnection();
+        }
+
+        // 释放连接
+        private void DisposeConnection()
+        {
+            if (_connection != null)
+            {
+                _connection.Close(); // 关闭连接
+                _connection.Dispose(); // 释放连接
+                _connection = null; // 释放连接
+            }
+        }
+
         /// <summary>
         /// 记录会话
         /// </summary>
-        /// <param name="session">会话对象</param>
+        /// <param name="session">会话</param>
         /// <param name="closeSession">是否关闭会话</param>
         public void RecordSession(UsageSession session, bool closeSession = false)
         {
@@ -99,54 +115,68 @@ namespace UsageTracker.Database
             {
                 return;
             }
+            InsertOrUpdateSession(session, closeSession);
+            UpdateSolutionUsageStatsInternal(session.SolutionName, session.DurationSeconds);
+        }
 
+        /// <summary>
+        /// 插入或更新会话
+        /// </summary>
+        /// <param name="session">会话</param>
+        /// <param name="closeSession">是否关闭会话</param>
+        private void InsertOrUpdateSession(UsageSession session, bool closeSession)
+        {
             using var cmd = new SQLiteCommand(_connection);
             try
             {
                 DateTime startTimeUtc = session.StartTime.ToUniversalTime();
                 DateTime endTimeUtc = session.EndTime.ToUniversalTime();
 
-                if (closeSession)
-                {
-                    // 关闭会话时，设置 IsClosed=1
-                    cmd.CommandText = @"
-                        UPDATE UsageSessions
-                        SET EndTime = @end, DurationSeconds = @dur, IsClosed = 1
-                        WHERE SolutionName = @name AND StartTime = @start AND IsClosed = 0";
-                }
-                else
-                {
-                    // 只更新未关闭的会话
-                    cmd.CommandText = @"
-                        UPDATE UsageSessions
-                        SET EndTime = @end, DurationSeconds = @dur
-                        WHERE SolutionName = @name AND StartTime = @start AND IsClosed = 0";
-                }
-                cmd.Parameters.AddRange(new[]
-                {
-                    new SQLiteParameter("@end", endTimeUtc),
-                    new SQLiteParameter("@dur", session.DurationSeconds),
-                    new SQLiteParameter("@name", session.SolutionName),
-                    new SQLiteParameter("@start", startTimeUtc)
-                });
+                // 先保存会话
+                cmd.CommandText = @"
+                    SELECT COUNT(*) FROM UsageSessions
+                    WHERE SolutionName = @name AND StartTime = @start
+                ";
+                cmd.Parameters.AddWithValue("@name", session.SolutionName);
+                cmd.Parameters.AddWithValue("@start", startTimeUtc);
+                int exists = Convert.ToInt32(cmd.ExecuteScalar());
+                cmd.Parameters.Clear();
 
-                int rowsAffected = cmd.ExecuteNonQuery();
-                if (rowsAffected == 0)
+                if (exists == 0)
                 {
-                    // 没有更新到，插入新记录
+                    // 插入新记录
                     cmd.CommandText = @"
                         INSERT INTO UsageSessions 
                         (SolutionName, StartTime, EndTime, DurationSeconds, IsClosed) 
                         VALUES (@name, @start, @end, @dur, @closed)";
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddRange(new[]
+                    cmd.Parameters.AddWithValue("@name", session.SolutionName);
+                    cmd.Parameters.AddWithValue("@start", startTimeUtc);
+                    cmd.Parameters.AddWithValue("@end", endTimeUtc);
+                    cmd.Parameters.AddWithValue("@dur", session.DurationSeconds);
+                    cmd.Parameters.AddWithValue("@closed", closeSession ? 1 : 0);
+                    cmd.ExecuteNonQuery();
+                }
+                else
+                {
+                    // 更新已存在记录
+                    if (closeSession)
                     {
-                        new SQLiteParameter("@name", session.SolutionName),
-                        new SQLiteParameter("@start", startTimeUtc),
-                        new SQLiteParameter("@end", endTimeUtc),
-                        new SQLiteParameter("@dur", session.DurationSeconds),
-                        new SQLiteParameter("@closed", closeSession ? 1 : 0)
-                    });
+                        cmd.CommandText = @"
+                            UPDATE UsageSessions
+                            SET EndTime = @end, DurationSeconds = @dur + DurationSeconds, IsClosed = 1
+                            WHERE SolutionName = @name AND StartTime = @start";
+                    }
+                    else
+                    {
+                        cmd.CommandText = @"
+                            UPDATE UsageSessions
+                            SET EndTime = @end, DurationSeconds = @dur + DurationSeconds
+                            WHERE SolutionName = @name AND StartTime = @start AND IsClosed = 0";
+                    }
+                    cmd.Parameters.AddWithValue("@end", endTimeUtc);
+                    cmd.Parameters.AddWithValue("@dur", session.DurationSeconds);
+                    cmd.Parameters.AddWithValue("@name", session.SolutionName);
+                    cmd.Parameters.AddWithValue("@start", startTimeUtc);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -154,85 +184,87 @@ namespace UsageTracker.Database
         }
 
         /// <summary>
-        /// 获取会话列表
+        /// 获取会话
         /// </summary>
         /// <param name="fromDate">开始日期</param>
         /// <param name="toDate">结束日期</param>
         /// <returns>会话列表</returns>
         public List<UsageSession> GetSessions(DateTime? fromDate = null, DateTime? toDate = null)
         {
-            var sessions = new List<UsageSession>();
+            return GetSessionsInternal(fromDate, toDate);
+        }
 
+        /// <summary>
+        /// 获取会话
+        /// </summary>
+        /// <param name="fromDate">开始日期</param>
+        /// <param name="toDate">结束日期</param>
+        /// <returns>会话列表</returns>
+        private List<UsageSession> GetSessionsInternal(DateTime? fromDate, DateTime? toDate)
+        {
+            var sessions = new List<UsageSession>(); // 会话列表
             if (_connection == null)
             {
-                return sessions;
+                return sessions; // 如果连接为空，则返回空列表
             }
 
             SQLiteCommand cmd = new SQLiteCommand(_connection);
             try
             {
-                cmd.CommandText = "SELECT * FROM UsageSessions WHERE 1=1";
+                cmd.CommandText = "SELECT * FROM UsageSessions WHERE 1=1"; // 查询所有会话
 
                 if (fromDate.HasValue)
                 {
-                    cmd.CommandText += " AND StartTime >= @from";
+                    cmd.CommandText += " AND StartTime >= @from"; // 添加开始日期条件
                     cmd.Parameters.AddWithValue("@from", fromDate.Value.ToUniversalTime());
                 }
 
                 if (toDate.HasValue)
                 {
-                    cmd.CommandText += " AND StartTime <= @to";
+                    cmd.CommandText += " AND StartTime <= @to"; // 添加结束日期条件
                     cmd.Parameters.AddWithValue("@to", toDate.Value.ToUniversalTime());
                 }
 
-                cmd.CommandText += " ORDER BY StartTime DESC";
+                cmd.CommandText += " ORDER BY StartTime DESC"; // 按开始时间降序排序
 
                 // 检查表是否存在
-                try
-                {
-                    SQLiteCommand checkCmd = new SQLiteCommand("SELECT name FROM sqlite_master WHERE type='table' AND name='UsageSessions'", _connection);
-                    var tableName = checkCmd.ExecuteScalar();
-                    checkCmd.Dispose();
+                SQLiteCommand checkCmd = new SQLiteCommand("SELECT name FROM sqlite_master WHERE type='table' AND name='UsageSessions'", _connection);
+                var tableName = checkCmd.ExecuteScalar();
+                checkCmd.Dispose();
 
-                    if (tableName == null)
-                    {
-                        CreateDatabaseSchema();
-                    }
-                    else
-                    {
-                        // 检查记录数
-                        SQLiteCommand countCmd = new SQLiteCommand("SELECT COUNT(*) FROM UsageSessions", _connection);
-                        var count = Convert.ToInt32(countCmd.ExecuteScalar());
-                        countCmd.Dispose();
-                    }
+                if (tableName == null)
+                {
+                    CreateDatabaseSchema();
                 }
-                catch { }
+                else
+                {
+                    // 检查记录数
+                    SQLiteCommand countCmd = new SQLiteCommand("SELECT COUNT(*) FROM UsageSessions", _connection);
+                    var count = Convert.ToInt32(countCmd.ExecuteScalar());
+                    countCmd.Dispose();
+                }
 
                 SQLiteDataReader reader = cmd.ExecuteReader();
                 try
                 {
                     while (reader.Read())
                     {
-                        try
+                        int id = Convert.ToInt32(reader["Id"]); // 获取ID
+                        string solutionName = reader["SolutionName"].ToString(); // 获取解决方案名称
+                        int durationSeconds = Convert.ToInt32(reader["DurationSeconds"]); // 获取持续时间
+
+                        DateTime startTime = reader.GetDateTime(reader.GetOrdinal("StartTime")); // 获取开始时间
+                        DateTime endTime = reader.GetDateTime(reader.GetOrdinal("EndTime")); // 获取结束时间
+
+                        var session = new UsageSession
                         {
-                            int id = Convert.ToInt32(reader["Id"]); // 获取ID
-                            string solutionName = reader["SolutionName"].ToString(); // 获取解决方案名称
-                            int durationSeconds = Convert.ToInt32(reader["DurationSeconds"]); // 获取持续时间
-
-                            DateTime startTime = reader.GetDateTime(reader.GetOrdinal("StartTime")); // 获取开始时间
-                            DateTime endTime = reader.GetDateTime(reader.GetOrdinal("EndTime")); // 获取结束时间
-
-                            var session = new UsageSession
-                            {
-                                Id = id,
-                                SolutionName = solutionName,
-                                StartTime = startTime,
-                                EndTime = endTime,
-                                DurationSeconds = durationSeconds
-                            };
-                            sessions.Add(session);
-                        }
-                        catch { }
+                            Id = id,
+                            SolutionName = solutionName,
+                            StartTime = startTime,
+                            EndTime = endTime,
+                            DurationSeconds = durationSeconds
+                        };
+                        sessions.Add(session);
                     }
                 }
                 finally
@@ -248,22 +280,83 @@ namespace UsageTracker.Database
             return sessions;
         }
 
-        // 释放数据库连接
-        public void Dispose()
+        /// <summary>
+        /// 更新解决方案使用统计
+        /// </summary>
+        /// <param name="solutionName">解决方案名称</param>
+        /// <param name="durationSeconds">累计时长</param>
+        public void UpdateSolutionUsageStats(string solutionName, int durationSeconds)
         {
-            if (_connection != null)
-            {
-                try
-                {
-                    _connection.Close(); // 关闭连接
-                    _connection.Dispose(); // 释放连接
-                }
-                catch { }
-                _connection = null; // 释放连接
-            }
+            UpdateSolutionUsageStatsInternal(solutionName, durationSeconds);
         }
 
-        // 设置SQLite本机库的加载路径
+        /// <summary>
+        /// 更新解决方案使用统计
+        /// </summary>
+        /// <param name="solutionName">解决方案名称</param>
+        /// <param name="durationSeconds">累计时长</param>
+        private void UpdateSolutionUsageStatsInternal(string solutionName, int durationSeconds)
+        {
+            if (_connection?.State != ConnectionState.Open) return;
+            using var cmd = new SQLiteCommand(_connection);
+            cmd.CommandText = @"
+                INSERT INTO SolutionUsageStats (SolutionName, TotalDurationSeconds)
+                VALUES (@name, @dur)
+                ON CONFLICT(SolutionName) DO UPDATE SET TotalDurationSeconds = TotalDurationSeconds + @dur
+            ";
+            cmd.Parameters.AddWithValue("@name", solutionName);
+            cmd.Parameters.AddWithValue("@dur", durationSeconds);
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>
+        /// 获取所有解决方案使用统计
+        /// </summary>
+        /// <returns>解决方案使用统计列表</returns>
+        public List<(string SolutionName, int TotalDurationSeconds)> GetAllSolutionUsageStats()
+        {
+            return GetAllSolutionUsageStatsInternal();
+        }
+
+        /// <summary>
+        /// 获取所有解决方案使用统计
+        /// </summary>
+        /// <returns>解决方案使用统计列表</returns>
+        private List<(string, int)> GetAllSolutionUsageStatsInternal()
+        {
+            var result = new List<(string, int)>(); // 解决方案名称和累计时长
+            if (_connection?.State != ConnectionState.Open) return result; // 如果连接状态不是打开，则返回空列表
+            using var cmd = new SQLiteCommand("SELECT SolutionName, TotalDurationSeconds FROM SolutionUsageStats ORDER BY TotalDurationSeconds DESC", _connection);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                result.Add((reader.GetString(0), reader.GetInt32(1))); // 将解决方案名称和累计时长添加到列表中
+            }
+            return result; // 返回解决方案累计时长列表
+        }
+
+        /// <summary>
+        /// 获取所有解决方案使用总时长
+        /// </summary>
+        /// <returns>所有解决方案使用总时长</returns>
+        public int GetTotalUsageSeconds()
+        {
+            return GetTotalUsageSecondsInternal();
+        }
+
+        /// <summary>
+        /// 获取所有解决方案使用总时长
+        /// </summary>
+        /// <returns>所有解决方案使用总时长</returns>
+        private int GetTotalUsageSecondsInternal()
+        {
+            if (_connection?.State != ConnectionState.Open) return 0; // 如果连接状态不是打开，则返回0
+            using var cmd = new SQLiteCommand("SELECT SUM(TotalDurationSeconds) FROM SolutionUsageStats", _connection);
+            var val = cmd.ExecuteScalar();
+            return val != DBNull.Value && val != null ? Convert.ToInt32(val) : 0; // 如果值不是DBNull，则返回值，否则返回0
+        }
+
+        // 设置SQLite本机库
         private void SetupSQLiteNativeLibrary()
         {
             try
@@ -303,12 +396,7 @@ namespace UsageTracker.Database
                         string dllPath = Path.Combine(dir, "SQLite.Interop.dll");
                         if (File.Exists(dllPath))
                         {
-                            // 尝试预加载DLL
-                            try
-                            {
-                                var handle = LoadLibrary(dllPath);
-                            }
-                            catch { }
+                            var handle = LoadLibrary(dllPath);
                         }
                     }
                 }

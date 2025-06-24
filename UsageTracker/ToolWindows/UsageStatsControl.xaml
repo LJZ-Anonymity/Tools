@@ -53,6 +53,20 @@
                     </lvc:CartesianChart.AxisY>
                 </lvc:CartesianChart>
             </TabItem>
+
+            <!-- 新增：解决方案统计Tab -->
+            <TabItem Header="解决方案统计">
+                <StackPanel Margin="10">
+                    <TextBlock Text="各解决方案累计使用时长（分钟）：" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <DataGrid x:Name="dgSolutionStats" AutoGenerateColumns="False" IsReadOnly="True" Height="200">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="解决方案" Binding="{Binding SolutionName}" Width="*"/>
+                            <DataGridTextColumn Header="累计时长（分钟）" Binding="{Binding TotalMinutes}" Width="150"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock x:Name="tbTotalUsage" FontWeight="Bold" Margin="0,10,0,0"/>
+                </StackPanel>
+            </TabItem>
         </TabControl>
     </Grid>
 </UserControl>
