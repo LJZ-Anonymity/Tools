@@ -26,3 +26,7 @@ UsageTracker/
 ├── UsageTracker.csproj
 └── UsageTrackerPackage.cs
 ```
+
+## 注意事项
+
+- 由于Visual Studio的限制，本扩展无法统计自身（即扩展项目）的调试时长，仅能统计普通解决方案的使用和调试时间。
