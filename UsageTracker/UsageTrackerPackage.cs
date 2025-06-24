@@ -183,9 +183,9 @@ namespace UsageTracker
         /// <param name="reason">调试事件原因</param>
         private void OnDebugStart(dbgEventReason reason)
         {
-            System.Diagnostics.Debug.WriteLine($"[UsageTrackerPackage] 调试事件触发: {reason}");
             if (!_isInitialized) return;
-            _trackingService?.RecordDebugStart();
+            _trackingService?.RecordDebugStart(); // 记录调试开始
+            _trackingService.RecordCurrentSession(); // 记录当前会话
         }
 
         /// <summary>

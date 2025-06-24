@@ -8,6 +8,7 @@ using System.ComponentModel;
 using UsageTracker.Database;
 using UsageTracker.Models;
 using System.Reflection;
+using ClosedXML.Excel;
 using System.Windows;
 using LiveCharts.Wpf;
 using System.Linq;
@@ -311,14 +312,14 @@ namespace UsageTracker.ToolWindows
                         {
                             var saveDialog = new Microsoft.Win32.SaveFileDialog
                             {
-                                Filter = "CSV文件|*.csv",
-                                DefaultExt = ".csv",
-                                FileName = $"VS使用统计_{DateTime.Now:yyyyMMdd}.csv"
+                                Filter = "Excel文件|*.xlsx",
+                                DefaultExt = ".xlsx",
+                                FileName = $"VS使用统计_{DateTime.Now:yyyyMMdd}.xlsx"
                             };
 
                             if (saveDialog.ShowDialog() == true)
                             {
-                                ExportToCsv(sessions.ToList(), saveDialog.FileName);
+                                ExportToExcel(sessions.ToList(), saveDialog.FileName);
                                 MessageBox.Show("导出成功!", "信息",
                                     MessageBoxButton.OK, MessageBoxImage.Information);
                             }
@@ -339,23 +340,52 @@ namespace UsageTracker.ToolWindows
         }
 
         /// <summary>
-        /// 导出数据到CSV文件
+        /// 导出数据到Excel文件
         /// </summary>
         /// <param name="sessions">会话记录</param>
         /// <param name="filePath">文件路径</param>
-        private void ExportToCsv(List<UsageSession> sessions, string filePath)
+        private void ExportToExcel(List<UsageSession> sessions, string filePath)
         {
-            using var writer = new StreamWriter(filePath);
-            // 写入标题
-            writer.WriteLine("Solution,StartTime,EndTime,DurationSeconds");
-
-            // 写入数据
-            foreach (var session in sessions)
+            using (var workbook = new XLWorkbook())
             {
-                writer.WriteLine($"\"{session.SolutionName}\"," +
-                                $"\"{session.StartTime:o}\"," +
-                                $"\"{session.EndTime:o}\"," +
-                                $"{session.DurationSeconds}"); // 写入数据
+                // Sheet1: 详细数据
+                var worksheet = workbook.Worksheets.Add("使用统计");
+                worksheet.Cell(1, 1).Value = "解决方案";
+                worksheet.Cell(1, 2).Value = "开始时间";
+                worksheet.Cell(1, 3).Value = "结束时间";
+                worksheet.Cell(1, 4).Value = "持续时间（秒）";
+                worksheet.Cell(1, 5).Value = "调试次数";
+                for (int i = 0; i < sessions.Count; i++)
+                {
+                    var session = sessions[i];
+                    worksheet.Cell(i + 2, 1).Value = session.SolutionName;
+                    worksheet.Cell(i + 2, 2).Value = session.StartTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    worksheet.Cell(i + 2, 3).Value = session.EndTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    worksheet.Cell(i + 2, 4).Value = session.DurationSeconds;
+                    worksheet.Cell(i + 2, 5).Value = session.DebugCount;
+                }
+                worksheet.Columns().AdjustToContents();
+
+                // Sheet2: 解决方案统计
+                var statSheet = workbook.Worksheets.Add("解决方案统计");
+                statSheet.Cell(1, 1).Value = "解决方案";
+                statSheet.Cell(1, 2).Value = "累计时长（分钟）";
+                statSheet.Cell(1, 3).Value = "调试次数";
+                if (dgSolutionStats.ItemsSource != null)
+                {
+                    int row = 2;
+                    foreach (var item in dgSolutionStats.ItemsSource)
+                    {
+                        var propType = item.GetType();
+                        statSheet.Cell(row, 1).Value = propType.GetProperty("SolutionName")?.GetValue(item)?.ToString();
+                        statSheet.Cell(row, 2).Value = propType.GetProperty("TotalMinutes")?.GetValue(item)?.ToString();
+                        statSheet.Cell(row, 3).Value = propType.GetProperty("DebugCount")?.GetValue(item)?.ToString();
+                        row++;
+                    }
+                }
+                statSheet.Columns().AdjustToContents();
+
+                workbook.SaveAs(filePath);
             }
         }
 

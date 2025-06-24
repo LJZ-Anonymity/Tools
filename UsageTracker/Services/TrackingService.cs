@@ -63,7 +63,7 @@ namespace UsageTracker.Services
         }
 
         // 记录当前会话
-        private void RecordCurrentSession(bool closeSession = false)
+        public void RecordCurrentSession(bool closeSession = false)
         {
             if (string.IsNullOrEmpty(_currentSolution))
             {
