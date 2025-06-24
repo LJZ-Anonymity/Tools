@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="UsageTracker.d5a0d2e1-9c9b-4f5a-9a1c-3b8e7e9f4d7a" Version="1.0" Language="en-US" Publisher="Company" />
-    <DisplayName>Visual Studio 使用统计</DisplayName>
-    <Description>跟踪Visual Studio使用时间的扩展</Description>
+    <Identity Id="UsageTracker.d5a0d2e1-9c9b-4f5a-9a1c-3b8e7e9f4d7a" Version="1.0" Language="zh-CN" Publisher="Anonymity" />
+    <DisplayName>Visual Studio 使用行为分析助手</DisplayName>
+    <Description>一款用于统计和分析 Visual Studio 使用时长、调试次数的扩展工具，支持数据可视化与一键导出 Excel，助力开发效率提升。</Description>
+    <Icon>Anonymity.ico</Icon>
   </Metadata>
   <Installation>
     <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
