@@ -392,8 +392,8 @@ namespace UsageTracker.ToolWindows
         // 重置数据
         private void BtnReset_Click(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show("确定要重置所有使用数据吗？此操作不可撤销！",
-                "确认重置", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            if (MessageBox.Show("确定要删除所有使用数据吗？此操作不可撤销！",
+                "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 try
                 {
@@ -404,38 +404,47 @@ namespace UsageTracker.ToolWindows
                         {
                             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                             
-                            _dbHelper.Dispose();
-                            
-                            // 使用与DatabaseHelper相同的路径
-                            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                            string dbFolder = Path.Combine(appData, "Anonymity", "UsageTracker");
-                            string dbPath = Path.Combine(dbFolder, "UsageTracker.db");
+                            // 删除数据库中的所有信息
+                            DeleteAllData();
 
-                            if (File.Exists(dbPath))
-                            {
-                                File.Delete(dbPath);
-                            }
-
-                            // 重新初始化数据库
-                            _dbHelper = new DatabaseHelper();
+                            // 重新加载数据
                             LoadData();
                             LoadSolutionStats();
 
-                            MessageBox.Show("数据已重置", "信息",
+                            MessageBox.Show("所有数据已删除", "信息",
                                 MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show($"重置失败: {ex.Message}", "错误",
+                            MessageBox.Show($"删除失败: {ex.Message}", "错误",
                                 MessageBoxButton.OK, MessageBoxImage.Error);
                         }
                     });
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"重置失败: {ex.Message}", "错误",
+                    MessageBox.Show($"删除失败: {ex.Message}", "错误",
                         MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+        /// <summary>
+        /// 删除数据库中的所有信息
+        /// </summary>
+        private void DeleteAllData()
+        {
+            try
+            {
+                // 检查数据库帮助类是否已初始化
+                _dbHelper ??= new DatabaseHelper();
+                
+                // 调用DatabaseHelper的DeleteAllData方法
+                _dbHelper.DeleteAllData();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"删除数据库信息失败: {ex.Message}");
             }
         }
 

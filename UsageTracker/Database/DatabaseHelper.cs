@@ -395,6 +395,36 @@ namespace UsageTracker.Database
             return val != DBNull.Value && val != null ? Convert.ToInt32(val) : 0;
         }
 
+        /// <summary>
+        /// 删除数据库中的所有信息
+        /// </summary>
+        public void DeleteAllData()
+        {
+            if (_connection?.State != ConnectionState.Open) return;
+            
+            try
+            {
+                // 删除所有会话记录
+                using var cmd1 = new SQLiteCommand(_connection);
+                cmd1.CommandText = "DELETE FROM UsageSessions";
+                cmd1.ExecuteNonQuery();
+                
+                // 删除所有解决方案统计
+                using var cmd2 = new SQLiteCommand(_connection);
+                cmd2.CommandText = "DELETE FROM SolutionUsageStats";
+                cmd2.ExecuteNonQuery();
+                
+                // 重置自增ID
+                using var cmd3 = new SQLiteCommand(_connection);
+                cmd3.CommandText = "DELETE FROM sqlite_sequence WHERE name='UsageSessions'";
+                cmd3.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"删除数据库信息失败: {ex.Message}");
+            }
+        }
+
         // 设置SQLite本机库
         private void SetupSQLiteNativeLibrary()
         {
