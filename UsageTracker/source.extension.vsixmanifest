@@ -1,40 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-  <Metadata>
-    <Identity Id="UsageTracker.d5a0d2e1-9c9b-4f5a-9a1c-3b8e7e9f4d7a" Version="1.0" Language="zh-CN" Publisher="Anonymity" />
-    <DisplayName>Visual Studio 使用行为分析助手</DisplayName>
-    <Description>
-      一款用于统计和分析 Visual Studio 使用时长、调试次数的扩展工具，支持数据可视化与一键导出 Excel，助力开发效率提升。由于 Visual Studio 扩展开发项目的特殊性，无法统计扩展项目自身的调试次数。
-    </Description>
-    <Icon>Anonymity.ico</Icon>
-  </Metadata>
-  <Installation>
-    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
-      <ProductArchitecture>amd64</ProductArchitecture>
-    </InstallationTarget>
-    <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[17.0, 18.0)">
-      <ProductArchitecture>amd64</ProductArchitecture>
-    </InstallationTarget>
-    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[17.0, 18.0)">
-      <ProductArchitecture>amd64</ProductArchitecture>
-    </InstallationTarget>
-  </Installation>
-  <SupportedProducts>
-    <VisualStudio Version="17.0">
-      <Edition>Community</Edition>
-      <Edition>Pro</Edition>
-      <Edition>Enterprise</Edition>
-    </VisualStudio>
-  </SupportedProducts>
-  <Dependencies>
-    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
-  </Dependencies>
-  <Prerequisites>
-    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
-  </Prerequisites>
-  <Assets>
-    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-    <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" AssemblyName="LiveCharts.Wpf, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df" />
-    <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" AssemblyName="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df" />
-  </Assets>
+    <Metadata>
+        <Identity Id="UsageTracker.20250704140500" Version="1.0.0" Language="zh-CN" Publisher="Anonymity" />
+        <DisplayName>UsageTracker</DisplayName>
+        <Description xml:space="preserve">统计和分析 Visual Studio 使用时长、调试次数的扩展工具，支持数据可视化与一键导出 Excel。由于 Visual Studio 扩展开发项目的特殊性，无法统计扩展项目自身的调试次数。</Description>
+        <MoreInfo>https://github.com/LJZ-Anonymity/Tools/tree/main/UsageTracker</MoreInfo>
+        <License>LICENSE.txt</License>
+        <Icon>Anonymity.ico</Icon>
+        <PreviewImage>Anonymity.ico</PreviewImage>
+    </Metadata>
+    <Installation>
+        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+        <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[17.0, 18.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+        <InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[17.0, 18.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+    </Installation>
+    <SupportedProducts>
+        <VisualStudio Version="17.0">
+            <Edition>Community</Edition>
+            <Edition>Pro</Edition>
+            <Edition>Enterprise</Edition>
+        </VisualStudio>
+    </SupportedProducts>
+    <Dependencies>
+        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
+    </Dependencies>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
+    </Prerequisites>
+    <Assets>
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" AssemblyName="LiveCharts.Wpf, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df" />
+        <Asset Type="Microsoft.VisualStudio.Assembly" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" AssemblyName="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df" />
+    </Assets>
 </PackageManifest>

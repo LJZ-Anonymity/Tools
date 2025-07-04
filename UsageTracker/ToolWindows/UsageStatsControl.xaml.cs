@@ -20,22 +20,21 @@ namespace UsageTracker.ToolWindows
 {
     public partial class UsageStatsControl : UserControl, INotifyPropertyChanged
     {
-        // 实现INotifyPropertyChanged接口
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private SeriesCollection _seriesCollection;
-        private List<string> _labels;
+        public event PropertyChangedEventHandler PropertyChanged; // 属性更改事件
+        private SeriesCollection _seriesCollection; // 图表数据集合
+        private DatabaseHelper _dbHelper; // 数据库帮助类
+        private List<string> _labels; // 图表标签
 
         // 使用属性通知
         public SeriesCollection SeriesCollection
         {
-            get => _seriesCollection;
+            get => _seriesCollection; // 获取系列
             set
             {
                 if (_seriesCollection != value)
                 {
-                    _seriesCollection = value;
-                    OnPropertyChanged();
+                    _seriesCollection = value; // 设置系列
+                    OnPropertyChanged(); // 通知属性已更改
                 }
             }
         }
@@ -43,39 +42,41 @@ namespace UsageTracker.ToolWindows
         // 使用属性通知
         public List<string> Labels
         {
-            get => _labels;
+            get => _labels; // 获取标签
             set
             {
                 if (_labels != value)
                 {
-                    _labels = value;
-                    OnPropertyChanged();
+                    _labels = value; // 设置标签
+                    OnPropertyChanged(); // 通知属性已更改
                 }
             }
         }
 
-        private DatabaseHelper _dbHelper; // 数据库帮助类
-
-        // 属性变更通知方法
+        /// <summary>
+        /// 实现INotifyPropertyChanged接口
+        /// </summary>
+        /// <param name="propertyName">属性名称</param>
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName)); // 通知属性已更改
         }
 
         static UsageStatsControl()
         {
-            // 注册程序集解析事件
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve; // 注册程序集解析事件
         }
 
-        // 处理程序集解析
+        /// <summary>
+        /// 处理程序集解析
+        /// </summary>
+        /// <param name="sender">发送者</param>
+        /// <param name="args">解析参数</param>
+        /// <returns>解析的程序集</returns>
         private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
-            // 获取程序集名称
-            var assemblyName = new AssemblyName(args.Name).Name;
-
-            // 如果是LiveCharts相关程序集，尝试从扩展目录加载
-            if (assemblyName == "LiveCharts.Wpf" || assemblyName == "LiveCharts")
+            var assemblyName = new AssemblyName(args.Name).Name; // 获取程序集名称
+            if (assemblyName == "LiveCharts.Wpf" || assemblyName == "LiveCharts") // 如果是LiveCharts相关程序集，尝试从扩展目录加载
             {
                 try
                 {
@@ -112,7 +113,6 @@ namespace UsageTracker.ToolWindows
                 }
                 catch { }
             }
-            
             return null;
         }
 
@@ -142,7 +142,6 @@ namespace UsageTracker.ToolWindows
         {
             try
             {
-                // 使用JoinableTaskFactory来确保在UI线程上执行
                 ThreadHelper.JoinableTaskFactory.Run(async () =>
                 {
                     try
@@ -169,7 +168,7 @@ namespace UsageTracker.ToolWindows
                         MessageBox.Show($"加载控件失败: {ex.Message}", "错误",
                             MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-                });
+                }); // 使用JoinableTaskFactory来确保在UI线程上执行
             }
             catch (Exception ex)
             {
@@ -183,11 +182,7 @@ namespace UsageTracker.ToolWindows
         {
             try
             {
-                
-                // 检查数据库帮助类是否已初始化
-                _dbHelper ??= new DatabaseHelper();
-                
-                // 使用JoinableTaskFactory来确保在UI线程上执行
+                _dbHelper ??= new DatabaseHelper(); // 检查数据库帮助类是否已初始化
                 ThreadHelper.JoinableTaskFactory.Run(async () =>
                 {
                     try
@@ -212,22 +207,35 @@ namespace UsageTracker.ToolWindows
                         else
                         {
                             // 清空图表数据
-                            Dispatcher.InvokeAsync(() =>
+                            _ = Dispatcher.InvokeAsync(() =>
                             {
                                 SeriesCollection = new SeriesCollection();
                                 Labels = new List<string>();
                             });
                         }
 
-                        // 新增：每次加载数据后刷新统计
-                        LoadSolutionStats();
+                        // 统计选定日期范围内的使用情况
+                        _ = Dispatcher.InvokeAsync(() =>
+                        {
+                            if (sessions.Count > 0)
+                            {
+                                double totalMinutes = sessions.Sum(s => s.Duration.TotalMinutes);
+                                int totalDebugs = sessions.Sum(s => s.DebugCount);
+                                tbRangeUsage.Text = $"所选日期范围内累计使用时长：{(totalMinutes < 60 ? Math.Round(totalMinutes, 1) + " 分钟" : Math.Round(totalMinutes / 60.0, 1) + " 小时")}，调试次数：{totalDebugs}";
+                            }
+                            else
+                            {
+                                tbRangeUsage.Text = "所选日期范围内无使用数据";
+                            }
+                        });
+                        LoadSolutionStats(); // 每次加载数据后刷新统计
                     }
                     catch (Exception ex)
                     {
                         MessageBox.Show($"加载数据失败: {ex.Message}", "错误",
                             MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-                });
+                }); // 使用JoinableTaskFactory来确保在UI线程上执行
             }
             catch (Exception ex)
             {                
@@ -346,47 +354,45 @@ namespace UsageTracker.ToolWindows
         /// <param name="filePath">文件路径</param>
         private void ExportToExcel(List<UsageSession> sessions, string filePath)
         {
-            using (var workbook = new XLWorkbook())
+            using var workbook = new XLWorkbook();
+            // Sheet1: 详细数据
+            var worksheet = workbook.Worksheets.Add("使用统计");
+            worksheet.Cell(1, 1).Value = "解决方案";
+            worksheet.Cell(1, 2).Value = "开始时间";
+            worksheet.Cell(1, 3).Value = "结束时间";
+            worksheet.Cell(1, 4).Value = "持续时间（秒）";
+            worksheet.Cell(1, 5).Value = "调试次数";
+            for (int i = 0; i < sessions.Count; i++)
             {
-                // Sheet1: 详细数据
-                var worksheet = workbook.Worksheets.Add("使用统计");
-                worksheet.Cell(1, 1).Value = "解决方案";
-                worksheet.Cell(1, 2).Value = "开始时间";
-                worksheet.Cell(1, 3).Value = "结束时间";
-                worksheet.Cell(1, 4).Value = "持续时间（秒）";
-                worksheet.Cell(1, 5).Value = "调试次数";
-                for (int i = 0; i < sessions.Count; i++)
-                {
-                    var session = sessions[i];
-                    worksheet.Cell(i + 2, 1).Value = session.SolutionName;
-                    worksheet.Cell(i + 2, 2).Value = session.StartTime.ToString("yyyy-MM-dd HH:mm:ss");
-                    worksheet.Cell(i + 2, 3).Value = session.EndTime.ToString("yyyy-MM-dd HH:mm:ss");
-                    worksheet.Cell(i + 2, 4).Value = session.DurationSeconds;
-                    worksheet.Cell(i + 2, 5).Value = session.DebugCount;
-                }
-                worksheet.Columns().AdjustToContents();
-
-                // Sheet2: 解决方案统计
-                var statSheet = workbook.Worksheets.Add("解决方案统计");
-                statSheet.Cell(1, 1).Value = "解决方案";
-                statSheet.Cell(1, 2).Value = "累计时长（分钟）";
-                statSheet.Cell(1, 3).Value = "调试次数";
-                if (dgSolutionStats.ItemsSource != null)
-                {
-                    int row = 2;
-                    foreach (var item in dgSolutionStats.ItemsSource)
-                    {
-                        var propType = item.GetType();
-                        statSheet.Cell(row, 1).Value = propType.GetProperty("SolutionName")?.GetValue(item)?.ToString();
-                        statSheet.Cell(row, 2).Value = propType.GetProperty("TotalMinutes")?.GetValue(item)?.ToString();
-                        statSheet.Cell(row, 3).Value = propType.GetProperty("DebugCount")?.GetValue(item)?.ToString();
-                        row++;
-                    }
-                }
-                statSheet.Columns().AdjustToContents();
-
-                workbook.SaveAs(filePath);
+                var session = sessions[i];
+                worksheet.Cell(i + 2, 1).Value = session.SolutionName;
+                worksheet.Cell(i + 2, 2).Value = session.StartTime.ToString("yyyy-MM-dd HH:mm:ss");
+                worksheet.Cell(i + 2, 3).Value = session.EndTime.ToString("yyyy-MM-dd HH:mm:ss");
+                worksheet.Cell(i + 2, 4).Value = session.DurationSeconds;
+                worksheet.Cell(i + 2, 5).Value = session.DebugCount;
             }
+            worksheet.Columns().AdjustToContents();
+
+            // Sheet2: 解决方案统计
+            var statSheet = workbook.Worksheets.Add("解决方案统计");
+            statSheet.Cell(1, 1).Value = "解决方案";
+            statSheet.Cell(1, 2).Value = "累计时长（分钟）";
+            statSheet.Cell(1, 3).Value = "调试次数";
+            if (dgSolutionStats.ItemsSource != null)
+            {
+                int row = 2;
+                foreach (var item in dgSolutionStats.ItemsSource)
+                {
+                    var propType = item.GetType();
+                    statSheet.Cell(row, 1).Value = propType.GetProperty("SolutionName")?.GetValue(item)?.ToString();
+                    statSheet.Cell(row, 2).Value = propType.GetProperty("TotalMinutes")?.GetValue(item)?.ToString();
+                    statSheet.Cell(row, 3).Value = propType.GetProperty("DebugCount")?.GetValue(item)?.ToString();
+                    row++;
+                }
+            }
+            statSheet.Columns().AdjustToContents();
+
+            workbook.SaveAs(filePath);
         }
 
         // 重置数据
@@ -397,7 +403,6 @@ namespace UsageTracker.ToolWindows
             {
                 try
                 {
-                    // 使用JoinableTaskFactory来确保在UI线程上执行
                     ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                     {
                         try
@@ -419,7 +424,7 @@ namespace UsageTracker.ToolWindows
                             MessageBox.Show($"删除失败: {ex.Message}", "错误",
                                 MessageBoxButton.OK, MessageBoxImage.Error);
                         }
-                    });
+                    }); // 使用JoinableTaskFactory来确保在UI线程上执行
                 }
                 catch (Exception ex)
                 {
@@ -429,18 +434,13 @@ namespace UsageTracker.ToolWindows
             }
         }
 
-        /// <summary>
-        /// 删除数据库中的所有信息
-        /// </summary>
+        // 删除数据库中的所有信息
         private void DeleteAllData()
         {
             try
             {
-                // 检查数据库帮助类是否已初始化
-                _dbHelper ??= new DatabaseHelper();
-                
-                // 调用DatabaseHelper的DeleteAllData方法
-                _dbHelper.DeleteAllData();
+                _dbHelper ??= new DatabaseHelper(); // 检查数据库帮助类是否已初始化
+                _dbHelper.DeleteAllData(); // 调用DatabaseHelper的DeleteAllData方法
             }
             catch (Exception ex)
             {
@@ -448,7 +448,7 @@ namespace UsageTracker.ToolWindows
             }
         }
 
-        // 新增：加载解决方案统计数据
+        // 加载解决方案统计数据
         private void LoadSolutionStats()
         {
             var stats = _dbHelper.GetAllSolutionUsageStats()
@@ -461,7 +461,15 @@ namespace UsageTracker.ToolWindows
             dgSolutionStats.ItemsSource = stats;
 
             int totalSeconds = _dbHelper.GetTotalUsageSeconds();
-            tbTotalUsage.Text = $"所有解决方案累计使用时长：{Math.Round(totalSeconds / 60.0, 1)} 分钟";
+            tbTotalUsage.Text = $"所有解决方案累计使用时长：" + (totalSeconds < 3600 ?
+                $"{Math.Round(totalSeconds / 60.0, 1)} 分钟" :
+                $"{Math.Round(totalSeconds / 3600.0, 1)} 小时"); // 如果使用时长小于1小时，则单位为分钟，否则单位为小时
+        }
+
+        private void DatePicker_SelectedDateChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            // 自动刷新数据
+            LoadData();
         }
     }
 }

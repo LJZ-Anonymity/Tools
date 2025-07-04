@@ -28,17 +28,22 @@ namespace UsageTracker
     {
         private readonly DatabaseHelper _dbHelper = new DatabaseHelper(); // 数据库帮助类
         private TrackingService _trackingService; // 跟踪服务类
+        private DebuggerEvents _debuggerEvents; // 调试事件类
         private IVsSolution _solutionService; // 解决方案服务类
         private bool _isInitialized = false; // 初始化标志
         private string _currentSolution; // 当前解决方案
-        private DTE _dte;
-        private DebuggerEvents _debuggerEvents;
+        private DTE _dte; // DTE对象，用于访问Visual Studio的开发环境
 
+        /// <summary>
+        /// 初始化包
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <param name="progress"></param>
+        /// <returns></returns>
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             await base.InitializeAsync(cancellationToken, progress); // 基类初始化
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken); // 切换到主线程
-
             try
             {
                 PreloadSQLiteInterop(); // 尝试预加载SQLite.Interop.dll
@@ -61,8 +66,8 @@ namespace UsageTracker
                     // 初始化命令
                     await ShowUsageStatsCommand.InitializeAsync(this); // 初始化显示使用统计命令
                     
-                    _isInitialized = true;
-                    
+                    _isInitialized = true; // 设置初始化标志为true
+
                     // 检查当前是否已有打开的解决方案
                     string currentSolution = GetSolutionName();
                     if (!string.IsNullOrEmpty(currentSolution) && currentSolution != "Unknown")
@@ -79,14 +84,12 @@ namespace UsageTracker
                     }
                 }
             }
-            catch (DllNotFoundException ex)
+            catch (DllNotFoundException) // SQLite本机库缺失错误
             {
-                // SQLite本机库缺失错误
                 ShowError("无法加载SQLite库", "请确保System.Data.SQLite包正确安装，并且SQLite.Interop.dll被正确复制到输出目录。");
             }
-            catch (Exception ex)
+            catch (Exception ex) // 其他一般错误
             {
-                // 其他一般错误
                 ShowError("初始化错误", $"初始化过程中遇到了问题: {ex.Message}");
             }
         }
@@ -108,21 +111,20 @@ namespace UsageTracker
         // 处理解决方案打开事件
         private void HandleSolutionOpened(object sender, OpenSolutionEventArgs e)
         {
-            if (!_isInitialized) return;
-
-            JoinableTaskFactory.RunAsync(async () =>
+            if (_isInitialized) // 确保已初始化
             {
-                try
+                JoinableTaskFactory.RunAsync(async () =>
                 {
-                    await JoinableTaskFactory.SwitchToMainThreadAsync();
-                    // 先结束上一个会话（此时 _currentSolution 还是上一个）
-                    _trackingService.EndSolutionSession();
-                    // 再开始新会话
-                    _currentSolution = GetSolutionName();
-                    _trackingService.StartSolutionSession(_currentSolution);
-                }
-                catch { }
-            });
+                    try
+                    {
+                        await JoinableTaskFactory.SwitchToMainThreadAsync(); // 确保在UI线程上执行
+                        _trackingService.EndSolutionSession(); // 先结束上一个会话（此时 _currentSolution 还是上一个）
+                        _currentSolution = GetSolutionName(); // 再开始新会话
+                        _trackingService.StartSolutionSession(_currentSolution); // 开始新的解决方案会话
+                    }
+                    catch { }
+                }); // 确保在UI线程上执行
+            }
         }
 
         // 处理解决方案关闭事件
@@ -144,25 +146,27 @@ namespace UsageTracker
         // 处理解决方案关闭事件
         private void HandleSolutionClosed(object sender, EventArgs e)
         {
-            if (!_isInitialized) return;
-            _currentSolution = null; // 设置当前解决方案为空
+            if (_isInitialized)
+            {
+                _currentSolution = null; // 设置当前解决方案为空
+            }
         }
 
         // 处理系统结束事件
         private void HandleSessionEnding(object sender, SessionEndingEventArgs e)
         {
-            if (!_isInitialized) return;
-
-            try
+            if (_isInitialized) // 确保已初始化
             {
-                // 使用JoinableTaskFactory来确保在UI线程上执行
-                JoinableTaskFactory.RunAsync(async () =>
+                try
                 {
-                    await JoinableTaskFactory.SwitchToMainThreadAsync();
-                    _trackingService.EndSolutionSession(); // 结束解决方案会话
-                });
+                    JoinableTaskFactory.RunAsync(async () =>
+                    {
+                        await JoinableTaskFactory.SwitchToMainThreadAsync();
+                        _trackingService.EndSolutionSession(); // 结束解决方案会话
+                    }); // 使用JoinableTaskFactory来确保在UI线程上执行
+                }
+                catch { }
             }
-            catch { }
         }
 
         /// <summary>
@@ -171,6 +175,7 @@ namespace UsageTracker
         /// <returns>解决方案名称</returns>
         private string GetSolutionName()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             if (_solutionService == null) return "Unknown"; // 如果解决方案服务为空，返回Unknown
 
             _solutionService.GetSolutionInfo(out _, out string solutionFile, out _); // 获取解决方案信息
@@ -194,6 +199,7 @@ namespace UsageTracker
         /// <param name="disposing">是否释放</param>
         protected override void Dispose(bool disposing)
         {
+            ThreadHelper.ThrowIfNotOnUIThread(); // 确保在UI线程上执行
             if (disposing && _isInitialized)
             {
                 // 确保所有资源被释放
@@ -208,7 +214,7 @@ namespace UsageTracker
 
                 if (_debuggerEvents != null)
                 {
-                    _debuggerEvents.OnEnterRunMode -= OnDebugStart;
+                    _debuggerEvents.OnEnterRunMode -= OnDebugStart; // 取消调试开始事件订阅
                 }
             }
             base.Dispose(disposing); // 基类释放
@@ -220,35 +226,27 @@ namespace UsageTracker
             try
             {
                 // 获取可能的DLL路径
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string extensionDir = Path.GetDirectoryName(typeof(UsageTrackerPackage).Assembly.Location);
                 string vsExtensionsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                                     @"Microsoft\VisualStudio\17.0_b402d05e\Extensions\UsageTracker");
+                string extensionDir = Path.GetDirectoryName(typeof(UsageTrackerPackage).Assembly.Location);
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
 
-                // 定义可能的路径
                 string[] possiblePaths = new string[]
                 {
-                    baseDir,
-                    extensionDir,
                     vsExtensionsDir,
-                    Path.Combine(baseDir, "x86"),
-                    Path.Combine(baseDir, "x64"),
-                    Path.Combine(extensionDir, "x86"),
-                    Path.Combine(extensionDir, "x64"),
-                    Path.Combine(vsExtensionsDir, "x86"),
-                    Path.Combine(vsExtensionsDir, "x64")
-                };
+                    extensionDir,
+                    baseDir
+                }; // 定义可能的路径
 
                 // 检查每个路径
                 foreach (string dir in possiblePaths)
                 {
                     if (Directory.Exists(dir))
                     {
-                        string dllPath = Path.Combine(dir, "SQLite.Interop.dll");
+                        string dllPath = Path.Combine(dir, "SQLite.Interop.dll"); // 拼接DLL路径
                         if (File.Exists(dllPath))
                         {
-                            // 尝试加载DLL
-                            var handle = LoadLibrary(dllPath);
+                            var handle = LoadLibrary(dllPath); // 加载DLL
                             if (handle != IntPtr.Zero)
                             {
                                 return; // 成功加载，退出

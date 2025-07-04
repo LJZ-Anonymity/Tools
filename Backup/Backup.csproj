@@ -9,7 +9,7 @@
     <UseWindowsForms>True</UseWindowsForms>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <BaseOutputPath>E:\Program\Backup\bin</BaseOutputPath>
+    <BaseOutputPath>E:\Program\Tools\Backup\bin</BaseOutputPath>
     <PackageIcon>favicon.png</PackageIcon>
   </PropertyGroup>
 
