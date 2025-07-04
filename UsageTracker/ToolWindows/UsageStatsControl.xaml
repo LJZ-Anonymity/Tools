@@ -65,8 +65,8 @@
                         <lvc:Axis Title="日期" Labels="{Binding Labels}"></lvc:Axis>
                     </lvc:CartesianChart.AxisX>
                     <lvc:CartesianChart.AxisY>
-                        <lvc:Axis Title="分钟"></lvc:Axis>
-                        <lvc:Axis Title="调试次数" Position="RightTop"></lvc:Axis>
+                        <lvc:Axis Title="分钟" MinValue="0"></lvc:Axis>
+                        <lvc:Axis Title="调试次数" Position="RightTop" MinValue="0"></lvc:Axis>
                     </lvc:CartesianChart.AxisY>
                 </lvc:CartesianChart>
             </TabItem>

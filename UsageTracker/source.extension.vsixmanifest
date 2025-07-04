@@ -3,7 +3,8 @@
     <Metadata>
         <Identity Id="UsageTracker.20250704140500" Version="1.0.0" Language="zh-CN" Publisher="Anonymity" />
         <DisplayName>UsageTracker</DisplayName>
-        <Description xml:space="preserve">统计和分析 Visual Studio 使用时长、调试次数的扩展工具，支持数据可视化与一键导出 Excel。由于 Visual Studio 扩展开发项目的特殊性，无法统计扩展项目自身的调试次数。</Description>
+        <Description xml:space="preserve">统计和分析 Visual Studio 使用时长、调试次数的扩展工具，支持数据可视化与一键导出 Excel。
+由于 Visual Studio 扩展开发项目的特殊性，无法统计扩展项目自身的调试次数。</Description>
         <MoreInfo>https://github.com/LJZ-Anonymity/Tools/tree/main/UsageTracker</MoreInfo>
         <License>LICENSE.txt</License>
         <Icon>Anonymity.ico</Icon>
