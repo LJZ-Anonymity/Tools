@@ -19,9 +19,17 @@
 
   <ItemGroup>
     <Compile Remove="bin\**" />
+    <Compile Remove="FileCopy\FileCopy\**" />
+    <Compile Remove="FileCopy\x64\**" />
     <EmbeddedResource Remove="bin\**" />
+    <EmbeddedResource Remove="FileCopy\FileCopy\**" />
+    <EmbeddedResource Remove="FileCopy\x64\**" />
     <None Remove="bin\**" />
+    <None Remove="FileCopy\FileCopy\**" />
+    <None Remove="FileCopy\x64\**" />
     <Page Remove="bin\**" />
+    <Page Remove="FileCopy\FileCopy\**" />
+    <Page Remove="FileCopy\x64\**" />
   </ItemGroup>
 
   <ItemGroup>

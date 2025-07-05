@@ -113,6 +113,7 @@ namespace Backup.Windows
             }
             catch (Exception ex)
             {
+                WindowState = WindowState.Normal; // 恢复窗口状态
                 System.Windows.MessageBox.Show($"备份失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); // 显示备份失败信息
             }
             finally
@@ -138,6 +139,7 @@ namespace Backup.Windows
                 {
                     Dispatcher.Invoke(() =>
                     {
+                        WindowState = WindowState.Normal; // 恢复窗口状态
                         System.Windows.MessageBox.Show($"备份文件 {file.FileName} 失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); // 显示备份失败信息
                     });
                 }
