@@ -4,6 +4,7 @@ using MessageBox = System.Windows.MessageBox;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Shell;
 using System.Collections.Generic;
+using System.Windows.Controls;
 using System.ComponentModel;
 using UsageTracker.Database;
 using UsageTracker.Models;
@@ -15,6 +16,7 @@ using System.Linq;
 using LiveCharts;
 using System.IO;
 using System;
+using System.Threading.Tasks;
 
 namespace UsageTracker.ToolWindows
 {
@@ -138,37 +140,26 @@ namespace UsageTracker.ToolWindows
         }
 
         // 控件加载事件
-        private void OnControlLoaded(object sender, RoutedEventArgs e)
+        private async void OnControlLoaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                ThreadHelper.JoinableTaskFactory.Run(async () =>
-                {
-                    try
-                    {
-                        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                        // 检查LiveCharts程序集是否已加载
-                        var liveChartsAssembly = Assembly.Load("LiveCharts");
-                        var liveChartsWpfAssembly = Assembly.Load("LiveCharts.Wpf");
+                // 检查LiveCharts程序集是否已加载
+                var liveChartsAssembly = Assembly.Load("LiveCharts");
+                var liveChartsWpfAssembly = Assembly.Load("LiveCharts.Wpf");
 
-                        // 初始化数据库
-                        _dbHelper ??= new DatabaseHelper();
+                // 初始化数据库
+                _dbHelper ??= new DatabaseHelper();
 
-                        // 设置默认日期范围
-                        dpFrom.SelectedDate = DateTime.Today.AddDays(-7);
-                        dpTo.SelectedDate = DateTime.Today;
+                // 设置默认日期范围
+                dpFrom.SelectedDate = DateTime.Today.AddDays(-7);
+                dpTo.SelectedDate = DateTime.Today;
 
-                        // 加载数据
-                        LoadData();
-                        LoadSolutionStats();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"加载控件失败: {ex.Message}", "错误",
-                            MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }); // 使用JoinableTaskFactory来确保在UI线程上执行
+                // 加载数据
+                await LoadDataAsync();
+                LoadSolutionStats();
             }
             catch (Exception ex)
             {
@@ -178,64 +169,53 @@ namespace UsageTracker.ToolWindows
         }
 
         // 加载数据
-        private void LoadData()
+        private async Task LoadDataAsync()
         {
             try
             {
                 _dbHelper ??= new DatabaseHelper(); // 检查数据库帮助类是否已初始化
-                ThreadHelper.JoinableTaskFactory.Run(async () =>
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                // 获取日期范围
+                var fromDate = dpFrom.SelectedDate;
+                var toDate = dpTo.SelectedDate?.AddDays(1); // 包含结束日期
+
+                // 加载表格数据
+                var sessions = _dbHelper.GetSessions(fromDate, toDate);
+
+                // 更新DataGrid
+                dgSessions.ItemsSource = null;
+                dgSessions.ItemsSource = sessions;
+
+                // 生成图表数据
+                if (sessions.Count > 0)
                 {
-                    try
+                    GenerateChartData(sessions);
+                }
+                else
+                {
+                    // 清空图表数据
+                    _ = Dispatcher.InvokeAsync(() =>
                     {
-                        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                        // 获取日期范围
-                        var fromDate = dpFrom.SelectedDate;
-                        var toDate = dpTo.SelectedDate?.AddDays(1); // 包含结束日期
+                        SeriesCollection = new SeriesCollection();
+                        Labels = new List<string>();
+                    });
+                }
 
-                        // 加载表格数据
-                        var sessions = _dbHelper.GetSessions(fromDate, toDate);
-
-                        // 更新DataGrid
-                        dgSessions.ItemsSource = null;
-                        dgSessions.ItemsSource = sessions;
-
-                        // 生成图表数据
-                        if (sessions.Count > 0)
-                        {
-                            GenerateChartData(sessions);
-                        }
-                        else
-                        {
-                            // 清空图表数据
-                            _ = Dispatcher.InvokeAsync(() =>
-                            {
-                                SeriesCollection = new SeriesCollection();
-                                Labels = new List<string>();
-                            });
-                        }
-
-                        // 统计选定日期范围内的使用情况
-                        _ = Dispatcher.InvokeAsync(() =>
-                        {
-                            if (sessions.Count > 0)
-                            {
-                                double totalMinutes = sessions.Sum(s => s.Duration.TotalMinutes);
-                                int totalDebugs = sessions.Sum(s => s.DebugCount);
-                                tbRangeUsage.Text = $"所选日期范围内累计使用时长：{(totalMinutes < 60 ? Math.Round(totalMinutes, 1) + " 分钟" : Math.Round(totalMinutes / 60.0, 1) + " 小时")}，调试次数：{totalDebugs}";
-                            }
-                            else
-                            {
-                                tbRangeUsage.Text = "所选日期范围内无使用数据";
-                            }
-                        });
-                        LoadSolutionStats(); // 每次加载数据后刷新统计
-                    }
-                    catch (Exception ex)
+                // 统计选定日期范围内的使用情况
+                _ = Dispatcher.InvokeAsync(() =>
+                {
+                    if (sessions.Count > 0)
                     {
-                        MessageBox.Show($"加载数据失败: {ex.Message}", "错误",
-                            MessageBoxButton.OK, MessageBoxImage.Error);
+                        double totalMinutes = sessions.Sum(s => s.Duration.TotalMinutes);
+                        int totalDebugs = sessions.Sum(s => s.DebugCount);
+                        tbRangeUsage.Text = $"所选日期范围内累计使用时长：{(totalMinutes < 60 ? Math.Round(totalMinutes, 1) + " 分钟" : Math.Round(totalMinutes / 60.0, 1) + " 小时")}，调试次数：{totalDebugs}";
                     }
-                }); // 使用JoinableTaskFactory来确保在UI线程上执行
+                    else
+                    {
+                        tbRangeUsage.Text = "所选日期范围内无使用数据";
+                    }
+                });
+                LoadSolutionStats(); // 每次加载数据后刷新统计
             }
             catch (Exception ex)
             {                
@@ -305,7 +285,7 @@ namespace UsageTracker.ToolWindows
                     }
                     if (tbChartTotalDebugs != null)
                     {
-                        tbChartTotalDebugs.Text = $"总调试次数：\n{totalDebugs}";
+                        tbChartTotalDebugs.Text = $"总调试次数：\n{totalDebugs} 次";
                     }
                 });
             }
@@ -315,7 +295,7 @@ namespace UsageTracker.ToolWindows
         // 刷新数据
         private void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
-            LoadData(); // 刷新数据
+            LoadDataAsync(); // 刷新数据
         }
 
         // 导出数据
@@ -427,7 +407,7 @@ namespace UsageTracker.ToolWindows
                             DeleteAllData();
 
                             // 重新加载数据
-                            LoadData();
+                            await LoadDataAsync();
                             LoadSolutionStats();
 
                             MessageBox.Show("所有数据已删除", "信息",
@@ -467,12 +447,12 @@ namespace UsageTracker.ToolWindows
         {
             var stats = _dbHelper.GetAllSolutionUsageStats()
                 .Select(s => new {
-                    SolutionName = s.Item1,
-                    TotalMinutes = Math.Round(s.Item2 / 60.0, 1),
-                    DebugCount = _dbHelper.GetDebugCount(s.Item1),
-                    FormattedTotalDuration = s.Item2 < 3600
-                        ? $"{Math.Round(s.Item2 / 60.0, 1)} min"
-                        : $"{Math.Round(s.Item2 / 3600.0, 1)} h"
+                    s.SolutionName,
+                    TotalMinutes = Math.Round(s.TotalDurationSeconds / 60.0, 1),
+                    DebugCount = _dbHelper.GetDebugCount(s.SolutionName),
+                    FormattedTotalDuration = s.TotalDurationSeconds < 3600
+                        ? $"{Math.Round(s.TotalDurationSeconds / 60.0, 1)} min"
+                        : $"{Math.Round(s.TotalDurationSeconds / 3600.0, 1)} h"
                 })
                 .ToList();
             dgSolutionStats.ItemsSource = stats;
@@ -483,10 +463,9 @@ namespace UsageTracker.ToolWindows
                 $"{Math.Round(totalSeconds / 3600.0, 1)} 小时"); // 如果使用时长小于1小时，则单位为分钟，否则单位为小时
         }
 
-        private void DatePicker_SelectedDateChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void DatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
-            // 自动刷新数据
-            LoadData();
+            LoadDataAsync(); // 自动刷新数据
         }
     }
 }
