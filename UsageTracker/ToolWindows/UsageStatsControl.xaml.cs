@@ -293,6 +293,20 @@ namespace UsageTracker.ToolWindows
                 {
                     SeriesCollection = newSeries; // 更新系列
                     Labels = newLabels; // 更新标签
+
+                    // 统计总时长和总调试次数
+                    double totalMinutes = sessions.Sum(s => s.Duration.TotalMinutes);
+                    int totalDebugs = sessions.Sum(s => s.DebugCount);
+                    if (tbChartTotalUsage != null)
+                    {
+                        tbChartTotalUsage.Text = totalMinutes < 60
+                            ? $"总使用时长：\n{Math.Round(totalMinutes, 1)} min"
+                            : $"总使用时长：\n{Math.Round(totalMinutes / 60.0, 1)} h";
+                    }
+                    if (tbChartTotalDebugs != null)
+                    {
+                        tbChartTotalDebugs.Text = $"总调试次数：\n{totalDebugs}";
+                    }
                 });
             }
             catch { }
@@ -453,9 +467,12 @@ namespace UsageTracker.ToolWindows
         {
             var stats = _dbHelper.GetAllSolutionUsageStats()
                 .Select(s => new {
-                    s.SolutionName,
-                    TotalMinutes = Math.Round(s.TotalDurationSeconds / 60.0, 1),
-                    DebugCount = _dbHelper.GetDebugCount(s.SolutionName)
+                    SolutionName = s.Item1,
+                    TotalMinutes = Math.Round(s.Item2 / 60.0, 1),
+                    DebugCount = _dbHelper.GetDebugCount(s.Item1),
+                    FormattedTotalDuration = s.Item2 < 3600
+                        ? $"{Math.Round(s.Item2 / 60.0, 1)} min"
+                        : $"{Math.Round(s.Item2 / 3600.0, 1)} h"
                 })
                 .ToList();
             dgSolutionStats.ItemsSource = stats;

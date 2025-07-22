@@ -15,6 +15,8 @@ namespace UsageTracker.Services
         private DateTime _sessionStart; // 会话开始时间
         private bool _isSolutionOpen; // 是否打开解决方案
         private int _sessionDebugCount = 0; // 当前会话调试次数
+        private DateTime _lastSessionDate = DateTime.Now.Date; // 记录上一次会话的日期
+        private Timer _midnightCheckTimer; // 跨天检查定时器
 
         /// <summary>
         /// 构造函数
@@ -24,6 +26,9 @@ namespace UsageTracker.Services
         {
             _dbHelper = dbHelper;
             _autoSaveTimer = new Timer(AutoSaveCallback, null,
+                TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+            // 新增：每分钟检查是否跨天
+            _midnightCheckTimer = new Timer(MidnightCheckCallback, null,
                 TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
         }
 
@@ -35,6 +40,8 @@ namespace UsageTracker.Services
         {
             _isSolutionOpen = true; // 设置为打开
             _sessionStart = DateTime.Now; // 设置会话开始时间
+            _sessionRecordTime = DateTime.Now; // 重置会话记录时间
+            _lastSessionDate = DateTime.Now.Date; // 记录当前日期
             _currentSolution = solutionName; // 设置当前解决方案
             _sessionDebugCount = 0; // 重置调试次数
             System.Diagnostics.Debug.WriteLine($"[TrackingService] 会话开始: {solutionName}");
@@ -59,6 +66,31 @@ namespace UsageTracker.Services
             if (_isSolutionOpen)
             {
                 RecordCurrentSession(); // 只更新未关闭的会话
+            }
+        }
+
+        /// <summary>
+        /// 跨天检查回调
+        /// </summary>
+        /// <param name="state">状态</param>
+        private void MidnightCheckCallback(object state)
+        {
+            if (_isSolutionOpen)
+            {
+                var nowDate = DateTime.Now.Date; // 获取当前日期
+                if (nowDate > _lastSessionDate)
+                {
+                    // 结束前一天会话，开始新一天会话
+                    RecordCurrentSession(true); // 结束前一天
+                    // 新的一天，重置会话开始时间为 00:00
+                    _sessionStart = nowDate;
+                    _sessionRecordTime = nowDate;
+                    _lastSessionDate = nowDate;
+                    _sessionDebugCount = 0;
+                    // 重新开启新会话
+                    System.Diagnostics.Debug.WriteLine($"[TrackingService] 跨天自动开启新会话: {_currentSolution}");
+                    _dbHelper.UpdateSolutionUsageStats(_currentSolution, 0); // 确保有行
+                }
             }
         }
 
@@ -107,6 +139,7 @@ namespace UsageTracker.Services
         public void Dispose()
         {
             _autoSaveTimer?.Dispose();
+            _midnightCheckTimer?.Dispose(); // 释放新定时器
             RecordCurrentSession(true); // 确保最后记录
         }
     }

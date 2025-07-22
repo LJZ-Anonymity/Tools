@@ -189,7 +189,11 @@ namespace UsageTracker
         private void OnDebugStart(dbgEventReason reason)
         {
             if (!_isInitialized) return;
-            _trackingService?.RecordDebugStart(); // 记录调试开始
+            // 只在启动调试时计数
+            if (reason == dbgEventReason.dbgEventReasonLaunchProgram)
+            {
+                _trackingService?.RecordDebugStart(); // 记录调试开始
+            }
             _trackingService.RecordCurrentSession(); // 记录当前会话
         }
 
