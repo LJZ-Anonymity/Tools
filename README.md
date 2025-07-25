@@ -8,5 +8,5 @@
 [![主要语言](https://img.shields.io/github/languages/top/LJZ-Anonymity/Tools)](https://github.com/LJZ-Anonymity/Tools)
 
 - 备份工具：[Backup](https://github.com/LJZ-Anonymity/Tools/tree/main/Backup)
-- Keil 代码编译扩展：[Keil](https://github.com/LJZ-Anonymity/Tools/tree/main/Keil)
+- Keil 代码编译扩展：[KeilBuilder](https://github.com/LJZ-Anonymity/Tools/tree/main/KeilBuilder)
 - Visual Studio 使用情况统计扩展：[UsageTracker](https://github.com/LJZ-Anonymity/Tools/tree/main/UsageTracker)

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="Keil.ef843cb2-61af-42b1-ae26-3f49b5aa4b68" Version="1.0" Language="en-US" Publisher="Company" />
-    <DisplayName>Keil</DisplayName>
+    <Identity Id="KeilBuilder.999034f3-d6d6-4297-bd6d-4e60b4eef5ce" Version="1.0" Language="en-US" Publisher="Company" />
+    <DisplayName>KeilBuilder</DisplayName>
     <Description>Empty VSIX Project.</Description>
   </Metadata>
   <Installation>
