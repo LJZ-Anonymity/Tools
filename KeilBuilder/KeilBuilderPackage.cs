@@ -48,7 +48,7 @@ namespace KeilBuilder
             await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             if (await GetServiceAsync(typeof(IMenuCommandService)) is OleMenuCommandService mcs)
             {
-                var commandId = new CommandID(KeilBuilderGuids.guidCommandSet, KeilBuilderCommandIds.cmdidKeilBuild);
+                var commandId = new CommandID(KeilBuilderGuids.guidPackage, KeilBuilderCommandIds.cmdidKeilBuild);
                 var menuCommand = new MenuCommand(this.OnKeilBuildCommand, commandId);
                 mcs.AddCommand(menuCommand);
             }

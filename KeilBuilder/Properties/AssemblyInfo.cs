@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("KeilBuilder")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("代替Keil进行代码编译的Visual Studio插件。快捷键Alt+K将Keil实例置于前台进行Build")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Anonymity")]
 [assembly: AssemblyProduct("KeilBuilder")]
 [assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
