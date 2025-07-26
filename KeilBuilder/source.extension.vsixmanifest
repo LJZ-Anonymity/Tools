@@ -3,7 +3,7 @@
     <Metadata>
         <Identity Id="KeilBuilder.999034f3-d6d6-4297-bd6d-4e60b4eef5ce" Version="1.0.0" Language="zh-CN" Publisher="Anonymity" />
         <DisplayName>KeilBuilder</DisplayName>
-        <Description xml:space="preserve">代替Keil进行代码编译的Visual Studio插件。快捷键Alt+K将Keil实例置于前台进行Build代替</Description>
+        <Description xml:space="preserve">代替Keil进行代码编译的Visual Studio插件。快捷键Alt+K将Keil实例置于前台进行Build</Description>
         <MoreInfo>https://github.com/LJZ-Anonymity/Tools/tree/main/KeilBuilder</MoreInfo>
         <License>LICENSE.txt</License>
         <Icon>Anonymity.ico</Icon>
