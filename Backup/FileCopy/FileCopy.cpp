@@ -18,9 +18,7 @@ extern "C" FILECOPY_API void CopyFiles(const char* sourcePaths, const char* targ
         std::string sourcePathsStr = sourcePaths; // 保存源路径
         std::string targetPathStr = targetPath; // 保存目标路径
         std::string styleStr = style; // 保存复制方式
-
-        // 如果需要删除目标文件夹，则先删除
-        if (cleanTargetFolder)
+        if (cleanTargetFolder) // 如果需要删除目标文件夹，则先删除
         {
             std::filesystem::remove_all(targetPathStr);
             std::filesystem::create_directories(targetPathStr); // 重新创建空文件夹
@@ -31,7 +29,6 @@ extern "C" FILECOPY_API void CopyFiles(const char* sourcePaths, const char* targ
             std::vector<std::string> files; // 保存文件路径
             std::istringstream stream(sourcePathsStr); // 读取源路径
             std::string file; // 保存文件路径
-
             while (std::getline(stream, file, '\n'))
             {
                 if (!file.empty() && std::filesystem::exists(file))
@@ -46,7 +43,6 @@ extern "C" FILECOPY_API void CopyFiles(const char* sourcePaths, const char* targ
         {
             std::istringstream stream(sourcePathsStr); // 读取源路径
             std::string sourceFolder; // 保存源文件夹路径
-
             while (std::getline(stream, sourceFolder, '\n'))
             {
                 if (!sourceFolder.empty() && std::filesystem::exists(sourceFolder))
