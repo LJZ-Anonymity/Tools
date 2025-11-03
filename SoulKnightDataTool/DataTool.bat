@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 chcp 65001 >nul
 
-:: 新增ESC字符定义 (添加在标题设置后)
+:: ESC字符定义
 for /F "tokens=2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do set "ESC=%%a"
 
 :: 定义颜色代码
@@ -80,39 +80,45 @@ echo %RED%无效选择，请重新输入。%RESET%
 echo.
 goto settingmenu
 
+:: 修改ADB路径
 :modify_adb_path
 set /p new_adb_path=请输入新的ADB路径：
 echo set "ADB=%new_adb_path%" > config.bat
 echo ADB路径已修改为：%new_adb_path%
-pause
+echo.
 goto settingmenu
 
+:: 修改设备名
 :modify_device_name
 set /p new_device_name=请输入新的设备名称：
 echo set "DEVICE=%new_device_name%" > config.bat
 echo 设备名称已修改为：%new_device_name%
-pause
+echo.
 goto settingmenu
 
+:: 修改游戏包名
 :modify_package_name
 set /p new_package_name=请输入新的游戏包名：
 echo set "PACKAGE=%new_package_name%" > config.bat
 echo 游戏包名已修改为：%new_package_name%
-pause
+echo.
 goto settingmenu
 
+:: 修改目标文件路径
 :modify_target_path
 set /p new_target_path=请输入新的目标文件路径：
 echo set "TARGET=%new_target_path%" > config.bat
 echo 目标文件路径已修改为：%new_target_path%
-pause
+echo.
 goto settingmenu
 
+:: 修改备份根目录
 :modify_backup_root
 set /p new_backup_root=请输入新的备份根目录：
+echo.
 echo set "BACKUP_ROOT=%new_backup_root%" > config.bat
 echo 备份根目录已修改为：%new_backup_root%
-pause
+echo.
 goto settingmenu
 
 :backup
