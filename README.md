@@ -10,4 +10,4 @@
 - 备份工具：[Backup](https://github.com/LJZ-Anonymity/Tools/tree/main/Backup)
 - Keil 代码编译扩展：[KeilBuilder](https://github.com/LJZ-Anonymity/Tools/tree/main/KeilBuilder)
 - Visual Studio 使用情况统计扩展：[UsageTracker](https://github.com/LJZ-Anonymity/Tools/tree/main/UsageTracker)
-- 元气骑士存档修改：[Soul_Knight DataTool](https://github.com/LJZ-Anonymity/Tools/tree/main/Soul_Knight DataTool)
+- 元气骑士存档修改：[SoulKnightDataTool](https://github.com/LJZ-Anonymity/Tools/tree/main/SoulKnightDataTool)
