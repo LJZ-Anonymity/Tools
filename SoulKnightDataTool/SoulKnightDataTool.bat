@@ -155,8 +155,6 @@ exit /b
 
 :backup
 echo.
-
-:: 检查设备
 call :check_device
 
 :: 生成时间戳目录
@@ -169,21 +167,79 @@ md "%BACKUP_DIR%" 2>nul
 set "FILE_INDEX=0"
 set "SUCCESS_COUNT=0"
 set "FAIL_COUNT=0"
-call :process_backup_file "files/game.data" "files" "game.data"
-call :process_backup_file "files/item_data.data" "files" "item_data.data"
-call :process_backup_file "files/season_data.data" "files" "season_data.data"
-call :process_backup_file "files/setting.data" "files" "setting.data"
-call :process_backup_file "files/statistics.data" "files" "statistics.data"
-call :process_backup_file "files/task.data" "files" "task.data"
-call :process_backup_file "files/battles.data" "files" "battles.data"
-call :process_backup_file "files/net_battle.data" "files" "net_battle.data"
-call :process_backup_file "files/sandbox_config.data" "files" "sandbox_config.data"
-call :process_backup_file "files/sandbox_maps.data" "files" "sandbox_maps.data"
-call :process_backup_file "files/backup.data" "files" "backup.data"
-call :process_backup_file "files/mall_reload_data.data" "files" "mall_reload_data.data"
-call :process_backup_file "files/monsrise_data.data" "files" "monsrise_data.data"
+:: 处理files目录下的所有子文件
+call :process_backup_files_folder
 call :process_backup_file "shared_prefs/%PACKAGE%.v2.playerprefs.xml" "shared_prefs" "%PACKAGE%.v2.playerprefs.xml"
 goto :backup_done
+
+:: 处理files目录下的所有子文件
+:process_backup_files_folder
+:: 创建目标文件夹
+for %%D in ("%BACKUP_DIR%") do set "TARGET_DIR=%%~D\files"
+if not exist "!TARGET_DIR!" (
+    md "!TARGET_DIR!" 2>nul
+)
+
+:: 获取文件列表
+set "FILES_LIST=%TEMP%\sk_files_list.txt"
+:: 清理设备上可能残留的临时文件
+"%ADB%" -s %DEVICE% shell "rm -f /sdcard/files_list.txt" >nul 2>&1
+
+:: 获取文件列表（使用ls -p列出文件，以/结尾的是目录，过滤掉）
+"%ADB%" -s %DEVICE% shell "su -c 'ls -p /data/data/%PACKAGE%/files/ | grep -v /' > /sdcard/files_list.txt" >nul 2>&1
+if errorlevel 1 (
+    :: 尝试不使用su
+    "%ADB%" -s %DEVICE% shell "ls -p /data/data/%PACKAGE%/files/ | grep -v / > /sdcard/files_list.txt" >nul 2>&1
+    if errorlevel 1 (
+        :: 备用方法：使用find命令
+        "%ADB%" -s %DEVICE% shell "su -c 'find /data/data/%PACKAGE%/files -maxdepth 1 -type f -exec basename {} \;' > /sdcard/files_list.txt" >nul 2>&1
+        if errorlevel 1 (
+            "%ADB%" -s %DEVICE% shell "find /data/data/%PACKAGE%/files -maxdepth 1 -type f -exec basename {} \; > /sdcard/files_list.txt" >nul 2>&1
+        )
+    )
+)
+
+:: 拉取文件列表到本地
+"%ADB%" -s %DEVICE% pull /sdcard/files_list.txt "!FILES_LIST!" >nul 2>&1
+
+if exist "!FILES_LIST!" (
+    :: 读取文件列表并逐个处理
+    for /f "usebackq delims=" %%L in ("!FILES_LIST!") do (
+        set "FILE_NAME=%%L"
+        :: 去除首尾空格（使用for循环去除空格）
+        for /f "tokens=*" %%N in ("!FILE_NAME!") do set "FILE_NAME=%%N"
+        if not "!FILE_NAME!"=="" (
+            :: 生成唯一的中转文件名
+            set /a FILE_INDEX+=1
+            set "TMP_SDCARD=/sdcard/sk_tmp_!FILE_INDEX!"
+            
+            echo 正在备份 files/!FILE_NAME! ...
+            :: 复制文件到sdcard
+            "%ADB%" -s %DEVICE% shell "su -c 'cp /data/data/%PACKAGE%/files/!FILE_NAME! !TMP_SDCARD!'" >nul 2>&1
+            if not errorlevel 1 (
+                :: 拉取文件
+                set "TARGET_FILE=!TARGET_DIR!\!FILE_NAME!"
+                "%ADB%" -s %DEVICE% pull !TMP_SDCARD! "!TARGET_FILE!" >nul 2>&1
+                if not errorlevel 1 (
+                    set /a SUCCESS_COUNT+=1
+                ) else (
+                    echo %RED%拉取失败：files/!FILE_NAME!%RESET%
+                    set /a FAIL_COUNT+=1
+                )
+                :: 清理中转
+                "%ADB%" -s %DEVICE% shell "rm !TMP_SDCARD!" >nul 2>&1
+            ) else (
+                echo %YELLOW%文件不存在或无法访问：files/!FILE_NAME!%RESET%
+                set /a FAIL_COUNT+=1
+            )
+        )
+    )
+    del "!FILES_LIST!" >nul 2>&1
+    "%ADB%" -s %DEVICE% shell "rm /sdcard/files_list.txt" >nul 2>&1
+) else (
+    echo %YELLOW%警告：无法获取files目录下的文件列表%RESET%
+)
+exit /b
 
 :process_backup_file
 set "SOURCE_PATH=%~1"
@@ -221,16 +277,16 @@ exit /b
 
 :backup_done
 
-:: 提取目录信息
-for %%A in ("%BACKUP_DIR%") do (
-    set "PARENT_DIR=%%~dpA"
+:: 提取目录信息（分离父目录和文件夹名称）
+for %%A in ("!BACKUP_DIR!") do (
+    set "PARENT_PATH=%%~dpA"
     set "FOLDER_NAME=%%~nxA"
 )
 
 :: 修改输出显示
 echo %GREEN%备份完成！%RESET%
-echo 成功：%SUCCESS_COUNT% 个文件，失败：%FAIL_COUNT% 个文件
-echo 文件已保存至：%PARENT_DIR%%GREEN%%FOLDER_NAME%%RESET%
+echo 成功：%SUCCESS_COUNT% 个文件，失败：%FAIL_COUNT% 个文件%RESET%
+echo %RESET%文件已保存至：!PARENT_PATH!%GREEN%!FOLDER_NAME!%RESET%
 echo.
 goto menu
 
@@ -254,21 +310,51 @@ set "FILE_INDEX=0"
 set "SUCCESS_COUNT=0"
 set "FAIL_COUNT=0"
 set "SKIP_COUNT=0"
-call :process_restore_file "files/game.data" "files" "game.data"
-call :process_restore_file "files/item_data.data" "files" "item_data.data"
-call :process_restore_file "files/season_data.data" "files" "season_data.data"
-call :process_restore_file "files/setting.data" "files" "setting.data"
-call :process_restore_file "files/statistics.data" "files" "statistics.data"
-call :process_restore_file "files/task.data" "files" "task.data"
-call :process_restore_file "files/battles.data" "files" "battles.data"
-call :process_restore_file "files/net_battle.data" "files" "net_battle.data"
-call :process_restore_file "files/sandbox_config.data" "files" "sandbox_config.data"
-call :process_restore_file "files/sandbox_maps.data" "files" "sandbox_maps.data"
-call :process_restore_file "files/backup.data" "files" "backup.data"
-call :process_restore_file "files/mall_reload_data.data" "files" "mall_reload_data.data"
-call :process_restore_file "files/monsrise_data.data" "files" "monsrise_data.data"
+:: 处理files目录下的所有文件（仅文件，不含子文件夹）
+call :process_restore_files_folder
 call :process_restore_file "shared_prefs/%PACKAGE%.v2.playerprefs.xml" "shared_prefs" "%PACKAGE%.v2.playerprefs.xml"
 goto :restore_done
+
+:: 处理files目录下的所有文件（仅文件，不含子文件夹）
+:process_restore_files_folder
+set "FILES_SOURCE_DIR=!SELECTED!\files"
+if not exist "!FILES_SOURCE_DIR!" (
+    echo %YELLOW%备份目录中不存在files文件夹，跳过files目录还原%RESET%
+    exit /b
+)
+
+:: 扫描files文件夹下的所有文件（只扫描第一层，不包括子文件夹）
+for %%F in ("!FILES_SOURCE_DIR!\*") do (
+    :: 检查是否为文件（目录判断：如果路径末尾加\后仍存在，则为目录）
+    if not exist "%%F\" (
+        set "FILE_NAME=%%~nxF"
+        if not "!FILE_NAME!"=="" (
+            :: 生成唯一的中转文件名（始终递增，避免冲突）
+            set /a FILE_INDEX+=1
+            set "TMP_SDCARD=/sdcard/sk_restore_!FILE_INDEX!"
+            
+            echo 正在还原 files/!FILE_NAME! ...
+            :: 推送文件到设备
+            "%ADB%" -s %DEVICE% push "%%F" !TMP_SDCARD! >nul 2>&1
+            if not errorlevel 1 (
+                :: 复制到目标路径（需root）
+                "%ADB%" -s %DEVICE% shell "su -c 'cp !TMP_SDCARD! /data/data/%PACKAGE%/files/!FILE_NAME! && chmod 660 /data/data/%PACKAGE%/files/!FILE_NAME!'" >nul 2>&1
+                if not errorlevel 1 (
+                    set /a SUCCESS_COUNT+=1
+                ) else (
+                    echo %RED%还原失败：files/!FILE_NAME!，请确认root权限%RESET%
+                    set /a FAIL_COUNT+=1
+                )
+                :: 清理中转
+                "%ADB%" -s %DEVICE% shell "rm !TMP_SDCARD!" >nul 2>&1
+            ) else (
+                echo %RED%推送失败：files/!FILE_NAME!%RESET%
+                set /a FAIL_COUNT+=1
+            )
+        )
+    )
+)
+exit /b
 
 :process_restore_file
 set "SOURCE_PATH=%~1"
@@ -317,9 +403,9 @@ exit /b
 
 :: 检查设备
 :check_device
-"%ADB%" devices | findstr /b /c:"%DEVICE%" >nul
+"%ADB%" devices | findstr /b /c:"!DEVICE!" >nul
 if errorlevel 1 (
-    echo %RED%设备 %DEVICE% 未连接%RESET%
+    echo %RED%设备 !DEVICE! 未连接%RESET%
     echo.
     pause & goto menu
 )

@@ -82,3 +82,5 @@ logs/
 Backup/FileCopy/FileCopy/
 Backup/FileCopy/x64/Debug/
 /SoulKnightDataTool/config.bat
+/SoulKnightDataTool/pull_files_full_temp.bat
+/SoulKnightDataTool/pull_files_temp.bat
