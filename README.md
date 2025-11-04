@@ -11,3 +11,5 @@
 - Keil 代码编译扩展：[KeilBuilder](https://github.com/LJZ-Anonymity/Tools/tree/main/KeilBuilder)
 - 元气骑士存档修改：[SoulKnightDataTool](https://github.com/LJZ-Anonymity/Tools/tree/main/SoulKnightDataTool)
 - Visual Studio 使用情况统计扩展：[UsageTracker](https://github.com/LJZ-Anonymity/Tools/tree/main/UsageTracker)
+
+## 该储存库项目均使用 MIT 许可证
