@@ -6,10 +6,10 @@ chcp 65001 >nul
 for /F "tokens=2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do set "ESC=%%a"
 
 :: 定义颜色代码
-set "GREEN=%ESC%[32m"  :: 绿色
-set "RED=%ESC%[31m"    :: 红色
-set "YELLOW=%ESC%[33m" :: 黄色
-set "RESET=%ESC%[0m"   :: 重置(默认颜色 灰色)
+set "GREEN=%ESC%[32m"
+set "RED=%ESC%[31m"
+set "YELLOW=%ESC%[33m"
+set "RESET=%ESC%[0m"
 
 title 元气骑士数据工具
 cd /d "%~dp0"
@@ -110,6 +110,13 @@ goto settingmenu
 :modifypkg
 echo.
 echo 当前游戏包名：%GREEN%!PACKAGE!%RESET%
+echo.
+echo 官方版本    com.ChillyRoom.DungeonShooter
+echo vivo版本    com.liangwu.yuanqiqishi.vivo
+echo 4399版本    com.chillyroom.knight.m4399
+echo 九游版本    com.knight.union.aligames
+echo 华为版本    yuanqiqishi.gamn.huawei
+echo.
 set "new_package_name="
 set /p new_package_name=请输入新的游戏包名（直接回车保持当前设置）：
 if not defined new_package_name (
@@ -143,7 +150,7 @@ goto settingmenu
 echo @echo off > config.bat
 echo set "ADB=ADB Files\adb.exe" >> config.bat
 echo set "DEVICE=" >> config.bat
-echo set "PACKAGE=com.chillyroom.knight.m4399" >> config.bat
+echo set "PACKAGE=com.ChillyRoom.DungeonShooter" >> config.bat
 echo set "BACKUP_ROOT=" >> config.bat
 exit /b
 

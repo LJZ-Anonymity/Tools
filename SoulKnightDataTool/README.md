@@ -167,8 +167,11 @@ A: 此工具需要设备已 root 或有 root 权限。部分操作需要访问 `
 ### Q: 如何切换游戏版本？
 
 A: 在设置中修改"游戏包名"即可。不同版本的包名可能不同，例如：
-- 4399版本：`com.chillyroom.knight.m4399`
 - 官方版本：`com.ChillyRoom.DungeonShooter`
+- vivo版本：`com.liangwu.yuanqiqishi.vivo`
+- 4399版本：`com.chillyroom.knight.m4399`
+- 九游版本：`com.knight.union.aligames`
+- 华为版本：`yuanqiqishi.gamn.huawei`
 - 其他渠道版本：请查看对应渠道的包名
 
 ### Q: 备份文件保存在哪里？
