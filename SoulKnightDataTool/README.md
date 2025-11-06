@@ -134,7 +134,7 @@ SoulKnightDataTool/
 ```batch
 set "ADB=ADB Files\adb.exe"
 set "DEVICE="
-set "PACKAGE=com.chillyroom.knight.m4399"
+set "PACKAGE=com.ChillyRoom.DungeonShooter"
 set "BACKUP_ROOT="
 ```
 
@@ -172,6 +172,7 @@ A: 在设置中修改"游戏包名"即可。不同版本的包名可能不同，
 - 4399版本：`com.chillyroom.knight.m4399`
 - 九游版本：`com.knight.union.aligames`
 - 华为版本：`yuanqiqishi.gamn.huawei`
+- B站版本：`com.knight.union.bili`
 - 其他渠道版本：请查看对应渠道的包名
 
 ### Q: 备份文件保存在哪里？

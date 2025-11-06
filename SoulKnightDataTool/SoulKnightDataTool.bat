@@ -36,6 +36,8 @@ echo %YELLOW%│   2.还原数据              │%RESET%
 echo %YELLOW%│   3.设置                  │%RESET%
 echo %YELLOW%│   4.退出                  │%RESET%
 echo %YELLOW%└───────────────────────────┘%RESET%
+echo 当前设备：%GREEN%%DEVICE%%RESET%
+echo 当前游戏包名：%GREEN%!PACKAGE!%RESET%
 set /p choice=请选择操作(1/2/3/4): 
 echo.
 
@@ -116,6 +118,7 @@ echo vivo版本    com.liangwu.yuanqiqishi.vivo
 echo 4399版本    com.chillyroom.knight.m4399
 echo 九游版本    com.knight.union.aligames
 echo 华为版本    yuanqiqishi.gamn.huawei
+echo B站版本     com.knight.union.bili
 echo.
 set "new_package_name="
 set /p new_package_name=请输入新的游戏包名（直接回车保持当前设置）：
@@ -190,7 +193,7 @@ call :chk
 
 :: 生成时间戳目录
 for /f "tokens=2 delims==" %%a in ('wmic os get localdatetime /value') do set DT=%%a
-set "TS=%DT:~0,8%_%DT:~8,4%"
+set "TS=%DT:~0,8%_%DT:~8,6%"
 set "BACKUP_DIR=%BACKUP_ROOT%\backup_%TS%"
 md "%BACKUP_DIR%" 2>nul
 
