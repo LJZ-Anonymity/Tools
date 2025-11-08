@@ -36,9 +36,10 @@ echo %YELLOW%│   2.还原数据              │%RESET%
 echo %YELLOW%│   3.设置                  │%RESET%
 echo %YELLOW%│   4.退出                  │%RESET%
 echo %YELLOW%└───────────────────────────┘%RESET%
+echo 当前备份根目录：%GREEN%!BACKUP_ROOT!%RESET%
 echo 当前游戏包名：%GREEN%!PACKAGE!%RESET%
+echo 当前存档ID：%GREEN%!SAVE_ID!%RESET%
 echo 当前设备：%GREEN%%DEVICE%%RESET%
-echo 当前UID：%GREEN%!UID!%RESET%
 set /p choice=请选择操作(1/2/3/4): 
 echo.
 
@@ -57,7 +58,7 @@ echo %YELLOW%│   1.修改ADB路径           │%RESET%
 echo %YELLOW%│   2.修改设备名            │%RESET%
 echo %YELLOW%│   3.修改游戏包名          │%RESET%
 echo %YELLOW%│   4.修改备份根目录        │%RESET%
-echo %YELLOW%│   5.修改UID               │%RESET%
+echo %YELLOW%│   5.修改存档ID            │%RESET%
 echo %YELLOW%│   6.返回主菜单            │%RESET%
 echo %YELLOW%└───────────────────────────┘%RESET%
 set /p setting_choice=请选择操作(1/2/3/4/5/6): 
@@ -153,20 +154,20 @@ if not defined new_backup_root (
 echo.
 goto settingmenu
 
-:: 修改UID
+:: 修改存档ID
 
 :modifyuid
-echo 当前UID：%GREEN%!UID!%RESET%
-set "new_uid="
-set /p new_uid=请输入新的UID（直接回车保持当前设置）：
+echo 当前存档ID：%GREEN%!SAVE_ID!%RESET%
+set "new_save_id="
+set /p new_save_id=请输入新的存档ID（直接回车保持当前设置）：
 
-if not defined new_uid (
-    echo UID未修改，仍为：%GREEN%!UID!%RESET%
+if not defined new_save_id (
+    echo 存档ID未修改，仍为：%GREEN%!SAVE_ID!%RESET%
 ) else (
     :: 去除前后空格
-    for /f "tokens=*" %%a in ("!new_uid!") do set "new_uid=%%a"
-    call :updatecfg UID "!new_uid!"
-    echo UID已修改为：%GREEN%!new_uid!%RESET%
+    for /f "tokens=*" %%a in ("!new_save_id!") do set "new_save_id=%%a"
+    call :updatecfg SAVE_ID "!new_save_id!"
+    echo 存档ID已修改为：%GREEN%!new_save_id!%RESET%
 )
 echo.
 goto settingmenu
@@ -176,10 +177,10 @@ goto settingmenu
 :initcfg
 echo @echo off > config.bat
 echo set "ADB=ADB Files\adb.exe" >> config.bat
-echo set "DEVICE=请选择设备" >> config.bat
+echo set "DEVICE=" >> config.bat
 echo set "PACKAGE=com.ChillyRoom.DungeonShooter" >> config.bat
 echo set "BACKUP_ROOT=" >> config.bat
-echo set "UID=请输入UID" >> config.bat
+echo set "SAVE_ID=" >> config.bat
 exit /b
 
 :: 更新配置文件
@@ -197,20 +198,20 @@ set "NEW_ADB=!ADB!"
 set "NEW_DEVICE=!DEVICE!"
 set "NEW_PACKAGE=!PACKAGE!"
 set "NEW_BACKUP_ROOT=!BACKUP_ROOT!"
-set "NEW_UID=!UID!"
+set "NEW_SAVE_ID=!SAVE_ID!"
 :: 更新对应的配置项
 if /i "!CONFIG_KEY!"=="ADB" set "NEW_ADB=!CONFIG_VALUE!"
 if /i "!CONFIG_KEY!"=="DEVICE" set "NEW_DEVICE=!CONFIG_VALUE!"
 if /i "!CONFIG_KEY!"=="PACKAGE" set "NEW_PACKAGE=!CONFIG_VALUE!"
 if /i "!CONFIG_KEY!"=="BACKUP_ROOT" set "NEW_BACKUP_ROOT=!CONFIG_VALUE!"
-if /i "!CONFIG_KEY!"=="UID" set "NEW_UID=!CONFIG_VALUE!"
+if /i "!CONFIG_KEY!"=="SAVE_ID" set "NEW_SAVE_ID=!CONFIG_VALUE!"
 :: 写入新配置
 echo @echo off > config.bat
 echo set "ADB=!NEW_ADB!" >> config.bat
 echo set "DEVICE=!NEW_DEVICE!" >> config.bat
 echo set "PACKAGE=!NEW_PACKAGE!" >> config.bat
 echo set "BACKUP_ROOT=!NEW_BACKUP_ROOT!" >> config.bat
-echo set "UID=!NEW_UID!" >> config.bat
+echo set "SAVE_ID=!NEW_SAVE_ID!" >> config.bat
 endlocal
 :: 重新读取配置文件以更新主作用域的变量
 call config.bat
@@ -230,35 +231,117 @@ set "FILE_INDEX=0"
 set "SUCCESS_COUNT=0"
 set "FAIL_COUNT=0"
 
-:: 备份files目录下的特定文件
-for %%F in (
-    "battles_!UID!_.data"
-    "item_data_!UID!_.data"
-    "item_data_!UID!_.data.new"
-    "item_data.data"
-    "mall_reload_data_!UID!_.data"
-    "mall_reload_data_!UID!_.data.new"
-    "monsrise_data_!UID!_.data"
-    "monsrise_data_!UID!_.data.new"
-    "sandbox_config_!UID!_.data"
-    "sandbox_maps_!UID!_.data"
-    "season_data_!UID!_.data"
-    "season_data_!UID!_.data.new"
-    "season_data.data"
-    "statistic_!UID!_.data"
-    "statistic_!UID!_.data.new"
-    "statistic.data"
-    "task_!UID!_.data"
-    "task_!UID!_.data.new"
-    "weapon_evolution_data_!UID!_.data"
-    "weapon_evolution_data_!UID!_.data.new"
-) do (
-    call :backupfile "files/%%~F" "files" "%%~F"
+:: 检测SAVE_ID是否为空
+set "NEED_BACKUP_ALL=0"
+if not defined SAVE_ID (
+    set "NEED_BACKUP_ALL=1"
+) else (
+    :: 检查是否为空或默认提示文本
+    if "!SAVE_ID!"=="" set "NEED_BACKUP_ALL=1"
+    if "!SAVE_ID!"=="请输入存档ID" set "NEED_BACKUP_ALL=1"
+)
+
+:: 根据SAVE_ID是否为空选择备份方式
+if "!NEED_BACKUP_ALL!"=="1" (
+    :: SAVE_ID为空，备份整个files文件夹
+    call :backupfiles
+) else (
+    :: SAVE_ID已设置，备份指定文件
+    for %%F in (
+        "battles_!SAVE_ID!_.data"
+        "item_data_!SAVE_ID!_.data"
+        "item_data_!SAVE_ID!_.data.new"
+        "item_data.data"
+        "mall_reload_data_!SAVE_ID!_.data"
+        "mall_reload_data_!SAVE_ID!_.data.new"
+        "monsrise_data_!SAVE_ID!_.data"
+        "monsrise_data_!SAVE_ID!_.data.new"
+        "sandbox_config_!SAVE_ID!_.data"
+        "sandbox_maps_!SAVE_ID!_.data"
+        "season_data_!SAVE_ID!_.data"
+        "season_data_!SAVE_ID!_.data.new"
+        "season_data.data"
+        "statistic_!SAVE_ID!_.data"
+        "statistic_!SAVE_ID!_.data.new"
+        "statistic.data"
+        "task_!SAVE_ID!_.data"
+        "task_!SAVE_ID!_.data.new"
+        "weapon_evolution_data_!SAVE_ID!_.data"
+        "weapon_evolution_data_!SAVE_ID!_.data.new"
+    ) do (
+        call :backupfile "files/%%~F" "files" "%%~F"
+    )
 )
 
 :: 备份shared_prefs目录下的文件
 call :backupfile "shared_prefs/%PACKAGE%.v2.playerprefs.xml" "shared_prefs" "%PACKAGE%.v2.playerprefs.xml"
 goto :backupdone
+
+:: 处理files目录下的所有子文件
+:backupfiles
+:: 创建目标文件夹
+set "TARGET_DIR=!BACKUP_DIR!\files"
+md "!TARGET_DIR!" 2>nul
+
+:: 获取文件列表
+set "FILES_LIST=%TEMP%\sk_files_list.txt"
+:: 清理设备上可能残留的临时文件
+"%ADB%" -s %DEVICE% shell "rm -f /sdcard/files_list.txt" >nul 2>&1
+
+:: 获取文件列表（使用ls -p列出文件，以/结尾的是目录，过滤掉）
+"%ADB%" -s %DEVICE% shell "su -c 'ls -p /data/data/%PACKAGE%/files/ | grep -v /' > /sdcard/files_list.txt" >nul 2>&1
+if errorlevel 1 (
+    :: 尝试不使用su
+    "%ADB%" -s %DEVICE% shell "ls -p /data/data/%PACKAGE%/files/ | grep -v / > /sdcard/files_list.txt" >nul 2>&1
+    if errorlevel 1 (
+        :: 备用方法：使用find命令
+        "%ADB%" -s %DEVICE% shell "su -c 'find /data/data/%PACKAGE%/files -maxdepth 1 -type f -exec basename {} \;' > /sdcard/files_list.txt" >nul 2>&1
+        if errorlevel 1 (
+            "%ADB%" -s %DEVICE% shell "find /data/data/%PACKAGE%/files -maxdepth 1 -type f -exec basename {} \; > /sdcard/files_list.txt" >nul 2>&1
+        )
+    )
+)
+
+:: 拉取文件列表到本地
+"%ADB%" -s %DEVICE% pull /sdcard/files_list.txt "!FILES_LIST!" >nul 2>&1
+if exist "!FILES_LIST!" (
+    :: 读取文件列表并逐个处理
+    for /f "usebackq delims=" %%L in ("!FILES_LIST!") do (
+        set "FILE_NAME=%%L"
+        :: 去除首尾空格（使用for循环去除空格）
+        for /f "tokens=*" %%N in ("!FILE_NAME!") do set "FILE_NAME=%%N"
+        if not "!FILE_NAME!"=="" (
+            :: 生成唯一的中转文件名
+            set /a FILE_INDEX+=1
+            set "TMP_SDCARD=/sdcard/sk_tmp_!FILE_INDEX!"
+            
+            echo 正在备份 files/!FILE_NAME! ...
+            :: 复制文件到sdcard
+            "%ADB%" -s %DEVICE% shell "su -c 'cp /data/data/%PACKAGE%/files/!FILE_NAME! !TMP_SDCARD!'" >nul 2>&1
+            if not errorlevel 1 (
+                :: 拉取文件
+                set "TARGET_FILE=!TARGET_DIR!\!FILE_NAME!"
+                "%ADB%" -s %DEVICE% pull !TMP_SDCARD! "!TARGET_FILE!" >nul 2>&1
+                if not errorlevel 1 (
+                    set /a SUCCESS_COUNT+=1
+                ) else (
+                    echo %RED%拉取失败：files/!FILE_NAME!%RESET%
+                    set /a FAIL_COUNT+=1
+                )
+                :: 清理中转
+                "%ADB%" -s %DEVICE% shell "rm !TMP_SDCARD!" >nul 2>&1
+            ) else (
+                echo %YELLOW%文件不存在或无法访问：files/!FILE_NAME!%RESET%
+                set /a FAIL_COUNT+=1
+            )
+        )
+    )
+    del "!FILES_LIST!" >nul 2>&1
+    "%ADB%" -s %DEVICE% shell "rm /sdcard/files_list.txt" >nul 2>&1
+) else (
+    echo %YELLOW%警告：无法获取files目录下的文件列表%RESET%
+)
+exit /b
 
 :backupfile
 set "SOURCE_PATH=%~1"
