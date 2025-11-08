@@ -60,7 +60,7 @@ echo %YELLOW%│   4.修改备份根目录        │%RESET%
 echo %YELLOW%│   5.修改UID               │%RESET%
 echo %YELLOW%│   6.返回主菜单            │%RESET%
 echo %YELLOW%└───────────────────────────┘%RESET%
-set /p setting_choice=请选择操作(1/2/3/4/5): 
+set /p setting_choice=请选择操作(1/2/3/4/5/6): 
 echo.
 
 if "%setting_choice%"=="1" goto modifyadb
@@ -229,76 +229,36 @@ md "%BACKUP_DIR%" 2>nul
 set "FILE_INDEX=0"
 set "SUCCESS_COUNT=0"
 set "FAIL_COUNT=0"
-:: 处理files目录下的所有子文件
-call :backupfiles
+
+:: 备份files目录下的特定文件
+for %%F in (
+    "battles_!UID!_.data"
+    "item_data_!UID!_.data"
+    "item_data_!UID!_.data.new"
+    "item_data.data"
+    "mall_reload_data_!UID!_.data"
+    "mall_reload_data_!UID!_.data.new"
+    "monsrise_data_!UID!_.data"
+    "monsrise_data_!UID!_.data.new"
+    "sandbox_config_!UID!_.data"
+    "sandbox_maps_!UID!_.data"
+    "season_data_!UID!_.data"
+    "season_data_!UID!_.data.new"
+    "season_data.data"
+    "statistic_!UID!_.data"
+    "statistic_!UID!_.data.new"
+    "statistic.data"
+    "task_!UID!_.data"
+    "task_!UID!_.data.new"
+    "weapon_evolution_data_!UID!_.data"
+    "weapon_evolution_data_!UID!_.data.new"
+) do (
+    call :backupfile "files/%%~F" "files" "%%~F"
+)
+
+:: 备份shared_prefs目录下的文件
 call :backupfile "shared_prefs/%PACKAGE%.v2.playerprefs.xml" "shared_prefs" "%PACKAGE%.v2.playerprefs.xml"
 goto :backupdone
-
-:: 处理files目录下的所有子文件
-:backupfiles
-:: 创建目标文件夹
-set "TARGET_DIR=!BACKUP_DIR!\files"
-md "!TARGET_DIR!" 2>nul
-
-:: 获取文件列表
-set "FILES_LIST=%TEMP%\sk_files_list.txt"
-:: 清理设备上可能残留的临时文件
-"%ADB%" -s %DEVICE% shell "rm -f /sdcard/files_list.txt" >nul 2>&1
-
-:: 获取文件列表（使用ls -p列出文件，以/结尾的是目录，过滤掉）
-"%ADB%" -s %DEVICE% shell "su -c 'ls -p /data/data/%PACKAGE%/files/ | grep -v /' > /sdcard/files_list.txt" >nul 2>&1
-if errorlevel 1 (
-    :: 尝试不使用su
-    "%ADB%" -s %DEVICE% shell "ls -p /data/data/%PACKAGE%/files/ | grep -v / > /sdcard/files_list.txt" >nul 2>&1
-    if errorlevel 1 (
-        :: 备用方法：使用find命令
-        "%ADB%" -s %DEVICE% shell "su -c 'find /data/data/%PACKAGE%/files -maxdepth 1 -type f -exec basename {} \;' > /sdcard/files_list.txt" >nul 2>&1
-        if errorlevel 1 (
-            "%ADB%" -s %DEVICE% shell "find /data/data/%PACKAGE%/files -maxdepth 1 -type f -exec basename {} \; > /sdcard/files_list.txt" >nul 2>&1
-        )
-    )
-)
-
-:: 拉取文件列表到本地
-"%ADB%" -s %DEVICE% pull /sdcard/files_list.txt "!FILES_LIST!" >nul 2>&1
-if exist "!FILES_LIST!" (
-    :: 读取文件列表并逐个处理
-    for /f "usebackq delims=" %%L in ("!FILES_LIST!") do (
-        set "FILE_NAME=%%L"
-        :: 去除首尾空格（使用for循环去除空格）
-        for /f "tokens=*" %%N in ("!FILE_NAME!") do set "FILE_NAME=%%N"
-        if not "!FILE_NAME!"=="" (
-            :: 生成唯一的中转文件名
-            set /a FILE_INDEX+=1
-            set "TMP_SDCARD=/sdcard/sk_tmp_!FILE_INDEX!"
-            
-            echo 正在备份 files/!FILE_NAME! ...
-            :: 复制文件到sdcard
-            "%ADB%" -s %DEVICE% shell "su -c 'cp /data/data/%PACKAGE%/files/!FILE_NAME! !TMP_SDCARD!'" >nul 2>&1
-            if not errorlevel 1 (
-                :: 拉取文件
-                set "TARGET_FILE=!TARGET_DIR!\!FILE_NAME!"
-                "%ADB%" -s %DEVICE% pull !TMP_SDCARD! "!TARGET_FILE!" >nul 2>&1
-                if not errorlevel 1 (
-                    set /a SUCCESS_COUNT+=1
-                ) else (
-                    echo %RED%拉取失败：files/!FILE_NAME!%RESET%
-                    set /a FAIL_COUNT+=1
-                )
-                :: 清理中转
-                "%ADB%" -s %DEVICE% shell "rm !TMP_SDCARD!" >nul 2>&1
-            ) else (
-                echo %YELLOW%文件不存在或无法访问：files/!FILE_NAME!%RESET%
-                set /a FAIL_COUNT+=1
-            )
-        )
-    )
-    del "!FILES_LIST!" >nul 2>&1
-    "%ADB%" -s %DEVICE% shell "rm /sdcard/files_list.txt" >nul 2>&1
-) else (
-    echo %YELLOW%警告：无法获取files目录下的文件列表%RESET%
-)
-exit /b
 
 :backupfile
 set "SOURCE_PATH=%~1"
